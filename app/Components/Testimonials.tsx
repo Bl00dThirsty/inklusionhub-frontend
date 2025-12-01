@@ -23,7 +23,7 @@ export default function Testimonials() {
   return (
     <section className="py-16 bg-white">
       <h2 className="text-center text-2xl font-bold text-black">Témoignages</h2>
-      <p className="text-center text-gray-600 mt-2">
+      <p className="text-center text-gray-600 mt-2 text-base">
         Découvrez les expériences de notre communauté
       </p>
 

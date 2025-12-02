@@ -1,9 +1,14 @@
 import Link from 'next/link';
 import LoginComponent from '../sign-in/components/loginComponent';
+import { ThemeToggle } from "../../Components/ThemeToggle";
 
 export default function SignInPage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="h-full flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="flex justify-end items-center space-x-5 w-full p-5">
+        <ThemeToggle />
+      </div>
+      
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           {/* Logo/Brand */}

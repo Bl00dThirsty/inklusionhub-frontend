@@ -2,6 +2,7 @@
 import { useRouter, useParams } from 'next/navigation';
 import { useState, useEffect } from "react"
 import Image from "next/image";
+import { ThemeToggle } from "../Components/ThemeToggle";
 
 export default function Header() {
   const router = useRouter();
@@ -24,13 +25,18 @@ export default function Header() {
 
       {/* Actions */}
       <div className="flex gap-2">
-        <button className="px-4 py-1 rounded-full text-sm text-white" style={{ backgroundColor: "#82EFCF" }}>S'inscrire</button>
+        <button 
+          onClick={() => router.push(`/sign-up/`)}
+          className="px-4 py-1 rounded-full text-sm text-white" style={{ backgroundColor: "#82EFCF" }}>
+          S'inscrire
+        </button>
         <button 
           onClick={() => router.push(`/sign-in/`)}
           className="px-4 py-1 bg-blue-600 text-white rounded-full text-sm">
           Connexion
         </button>
       </div>
+      <ThemeToggle />
     </header>
   );
 }

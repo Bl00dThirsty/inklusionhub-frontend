@@ -16,7 +16,7 @@ export default function LoginComponent() {
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
-      {/* Email Field */}
+      
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700">
           Adresse e-mail
@@ -36,7 +36,7 @@ export default function LoginComponent() {
         </div>
       </div>
 
-      {/* Password Field */}
+     
       <div>
         <label htmlFor="password" className="block text-sm font-medium text-gray-700">
           Mot de passe
@@ -56,7 +56,7 @@ export default function LoginComponent() {
         </div>
       </div>
 
-      {/* Forgot password */}
+      {/* password oublier */}
       <div className="flex items-center justify-between">
         {/* <div className="flex items-center">
           <input

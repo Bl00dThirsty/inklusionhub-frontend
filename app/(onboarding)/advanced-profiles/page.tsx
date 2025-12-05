@@ -154,7 +154,10 @@ export default function AdvancedProfilesPage() {
   const saveProfile = () => {
     // Sauvegarder les données selon le profil actif
     const profiles = JSON.parse(localStorage.getItem('advancedProfiles') || '{}');
-    
+    const current = Number(localStorage.getItem("OnboardProgress")) || 0;
+    const updated = current + 20;
+
+    localStorage.setItem("OnboardProgress", String(updated));
     if (activeProfile === 'employer') {
       localStorage.setItem('advancedProfiles', JSON.stringify({
         ...profiles,
@@ -572,14 +575,14 @@ export default function AdvancedProfilesPage() {
             </div>
           </div>
         )}
-
+      {/* //, 'Quiz', 'Pratique interactive', 'Cours en direct' */}
         {selectedRoles.includes('apprenant') && (
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Préférences d'apprentissage
             </h3>
             <div className="space-y-3">
-              {['Vidéo', 'Texte', 'Quiz', 'Pratique interactive', 'Cours en direct'].map((pref) => (
+              {['Vidéo', 'Texte'].map((pref) => (
                 <div key={pref} className="flex items-center">
                   <input
                     id={`pref-${pref}`}

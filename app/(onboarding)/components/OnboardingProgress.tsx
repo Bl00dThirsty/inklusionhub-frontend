@@ -18,7 +18,7 @@ export function OnboardingProgress() {
   const currentStepIndex = steps.findIndex(step => 
     pathname.includes(step.path)
   );
-
+  const OnboardProgress = Number(localStorage.getItem("OnboardProgress")) || 0;
   return (
     <div className="px-4 py-6">
       <div className="max-w-4xl mx-auto">

@@ -82,7 +82,10 @@ export default function BasicProfilePage() {
     if (Object.keys(newErrors).length === 0) {
       // Sauvegarder les données
       localStorage.setItem('basicProfile', JSON.stringify(formData));
-      
+      const current = Number(localStorage.getItem("OnboardProgress")) || 0;
+      const updated = current + 20;
+
+      localStorage.setItem("OnboardProgress", String(updated));
       // Rediriger vers l'étape suivante
       if (selectedRoles.includes('employeur') || selectedRoles.includes('traducteur')) {
         router.push('/advanced-profiles');

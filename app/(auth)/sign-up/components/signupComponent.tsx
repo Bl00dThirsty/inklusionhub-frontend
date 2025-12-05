@@ -40,6 +40,9 @@ export default function SignupComponent() {
         
         if (response.ok) {
           // Rediriger vers l'onboarding étape 1
+          const current = Number(localStorage.getItem("OnboardProgress")) || 0;
+          const updated = current + 20;
+          localStorage.setItem("OnboardProgress", String(updated));
           router.push('/role-selection');
         } else {
           const error = await response.json();

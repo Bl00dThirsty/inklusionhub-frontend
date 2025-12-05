@@ -57,7 +57,10 @@ export default function PreferencesPage() {
       const userRoles = JSON.parse(localStorage.getItem('userRoles') || '[]');
       const basicProfile = JSON.parse(localStorage.getItem('basicProfile') || '{}');
       const advancedProfiles = JSON.parse(localStorage.getItem('advancedProfiles') || '{}');
-      
+      const current = Number(localStorage.getItem("OnboardProgress")) || 0;
+      const updated = current + 20;
+
+      localStorage.setItem("OnboardProgress", String(updated));
       // Préparer les données finales
       const userData = {
         roles: userRoles,

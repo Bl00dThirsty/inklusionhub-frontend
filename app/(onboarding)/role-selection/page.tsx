@@ -68,6 +68,10 @@ export default function RoleSelectionPage() {
     if (selectedRoles.length > 0) {
       // TODO: Sauvegarder les rôles sélectionnés via API
       localStorage.setItem('userRoles', JSON.stringify(selectedRoles));
+      const current = Number(localStorage.getItem("OnboardProgress")) || 0;
+      const updated = current + 20;
+
+      localStorage.setItem("OnboardProgress", String(updated));
       router.push('/basic-profile');
     }
   };

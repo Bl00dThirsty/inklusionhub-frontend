@@ -20,7 +20,7 @@ export default function Home() {
           <button className="bg-blue-600 text-white px-5 py-2 rounded-full">
             Commencer maintenant
           </button>
-          <button className=" px-5 py-2 rounded-full text-gray-600"style={{ backgroundColor: "#82EFCF" }}>
+          <button className=" px-5 py-2 rounded-full text-gray-600"style={{ backgroundColor: "#82EFCF" }}>       
             Découvrir la surdité
           </button>
         </div>

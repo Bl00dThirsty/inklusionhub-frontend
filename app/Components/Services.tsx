@@ -17,7 +17,7 @@ export default function Services() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8 max-w-5xl mx-auto mt-10">
         {data.map((item, key) => (
-          <div key={key} className="bg-white p-6 rounded-xl shadow-sm border">
+          <div key={key} className="bg-white p-6 rounded-xl shadow-sm border-white">
             <Image
               src={item.img}
               alt={item.title}

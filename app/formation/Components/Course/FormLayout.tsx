@@ -36,28 +36,27 @@ export default function FormationLayout({ children }: FormationLayoutProps) {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-12">
-          <button className="px-6 py-3 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2">
-            <span>Niveau</span>
-            <ChevronDown size={16} />
-          </button>
+        <div className="mt-4 flex flex-wrap gap-3">
+  <button className="px-4 py-2 bg-gray-200 text-black rounded-full flex items-center justify-between w-44">
+    <span>Niveau</span>
+    <ChevronDown size={16} />
+  </button>
 
-          <button className="px-6 py-3 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2">
-            <span>Durée</span>
-            <ChevronDown size={16} />
-          </button>
+  <button className="px-4 py-2 bg-gray-200 text-black rounded-full flex items-center justify-between w-44">
+    <span>Durée</span>
+    <ChevronDown size={16} />
+  </button>
 
-          <button className="px-6 py-3 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2">
-            <span>Langue</span>
-            <ChevronDown size={16} />
-          </button>
+  <button className="px-4 py-2 bg-gray-200 text-black rounded-full flex items-center justify-between w-44">
+    <span>Langage</span>
+    <ChevronDown size={16} />
+  </button>
 
-          <button className="px-6 py-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex items-center gap-2">
-            <span>LSF Disponible</span>
-            <ChevronDown size={16} />
-          </button>
-        </div>
-
+  <button className="px-4 py-2 bg-blue-100 text-blue-600 rounded-full flex items-center justify-between w-44">
+    <span>LSF Disponible</span>
+    <ChevronDown size={16} />
+  </button>
+</div>
         {children}
       </section>
     </div>

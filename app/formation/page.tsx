@@ -1,6 +1,5 @@
 import Header from "@/app/Components/Header";
 import CourseList from "./Components/Course/CourseList";
-import QuizCard from "./Components/Quiz/QuizSection";
 import Footer from "@/app/Components/Footer";
 import FormationLayout from "./Components/Course/FormLayout";
 import LearningProgress from "./Components/Course/LaerningProgress";

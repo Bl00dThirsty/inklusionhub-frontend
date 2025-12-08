@@ -16,11 +16,10 @@ export default function Header() {
 
       {/* Navigation */}
       <nav className="flex gap-6 text-sm">
-        <a href="#" className="text-blue-600">Accueil</a>
-        <a href="#"className="text-black">Communication</a>
-        <a href="#"className="text-black">Formation</a>
-        <a href="#"className="text-black">Outils</a>
-        <a href="#"className="text-black">Communauté</a>
+        <a href="/" className="text-blue-600">Accueil</a>
+        <a href="/communication" className="text-black">Communication</a>
+        <a href="/formation" className="text-black">Formation</a>
+        <a href="/communaute" className="text-black">Communauté</a>
       </nav>
 
       {/* Actions */}

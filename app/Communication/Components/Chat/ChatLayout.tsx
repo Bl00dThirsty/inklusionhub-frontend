@@ -3,7 +3,7 @@
 import { useState } from "react";
 import ChatSection from "./chatSection";
 import ChatMessage from "../Messages/ChatMessage";
-import { Video } from "lucide-react";
+import { SendHorizontal, Video } from "lucide-react";
 
 interface User {
   id: number;
@@ -96,9 +96,8 @@ export default function ChatLayout() {
                 placeholder="Écrire un message..."
                 className="w-full border rounded-lg px-3 py-2"
               />
-              <button className="bg-[#82EFCF] text-black px-4 py-2 rounded-lg font-semibold w-full sm:w-auto">
-                Envoyer
-              </button>
+              <SendHorizontal  className="bg-[#82EFCF] text-black px-4 py-2 rounded-lg font-semibold w-full sm:w-auto" />
+              
             </div>
           </>
         ) : (

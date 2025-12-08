@@ -5,19 +5,22 @@ export default function Home() {
   return (
     <section className="max-w-6xl mx-auto px-6 py-16 grid md:grid-cols-2 gap-12 items-center">
       <div>
-        <h1 className="text-3xl font-bold text-black leading-tight">
+        <h1 className="text-3xl font-bold text-black leading-tight text-left">
           Connecter les mondes, <br /> briser les barrières
         </h1>
-        <p className="mt-4 text-gray-600">
+        <p className="mt-4 text-gray-600 text-left text-lg">
           Bienvenue sur InklusionHub, la passerelle entre le monde des sourds,
           malentendants et entendants.
+        </p>
+        <p className="mt-4 text-left text-gray-500 flex items-right gap-3 text-base">
+          Decouvrez, apprennez et communiquez autrement.
         </p>
 
         <div className="flex gap-4 mt-6">
           <button className="bg-blue-600 text-white px-5 py-2 rounded-full">
             Commencer maintenant
           </button>
-          <button className="border px-5 py-2 rounded-full"style={{ backgroundColor: "#82EFCF" }}>
+          <button className=" px-5 py-2 rounded-full text-gray-600"style={{ backgroundColor: "#82EFCF" }}>
             Découvrir la surdité
           </button>
         </div>

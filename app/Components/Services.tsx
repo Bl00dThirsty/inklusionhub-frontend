@@ -13,7 +13,7 @@ export default function Services() {
   return (
     <section className="text-center py-16 bg-white">
       <h2 className="text-2xl font-bold text-black">Nos Services</h2>
-      <p className="mt-2 text-gray-600">Decouvrez nos outils pour une communication inclusive.</p>
+      <p className="mt-2 text-gray-600 text-base">Decouvrez nos outils pour une communication inclusive.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8 max-w-5xl mx-auto mt-10">
         {data.map((item, key) => (

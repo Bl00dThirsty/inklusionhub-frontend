@@ -4,13 +4,13 @@ export default function Discover() {
   return (
     <section className="max-w-6xl mx-auto px-6 py-20 grid md:grid-cols-2 gap-12 items-start">
       <div>
-        <h2 className="text-2xl font-bold text-black">Découvrir la surdité</h2>
-        <p className="mt-4 text-gray-600">
+        <h2 className="text-2xl font-bold text-black text-left">Découvrir la surdité</h2>
+        <p className="mt-4 text-gray-600 text-left text-lg">
           Plongez dans une expérience immersive pour mieux comprendre le monde
           des personnes sourdes et malentendantes.
         </p>
 
-        <div className="mt-4 flex items-center gap-3 text-sm">
+        <div className="mt-4 flex text-gray-500 items-right gap-3 text-sm">
           <span>🎬 Sous-titres disponibles</span>
           <span>🤟 Traduction LSF</span>
         </div>

@@ -13,7 +13,7 @@ interface DashboardHeaderProps {
 }
 
 export default function DashboardHeader({ 
-  userName = 'Yvana',
+  userName = 'Utilisateur',
   userRole = 'malentendant',
   userAvatar 
 }: DashboardHeaderProps) {

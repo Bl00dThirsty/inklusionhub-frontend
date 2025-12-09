@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "../app/Components/providers/ThemeProvider";
 import "./globals.css";
 import DashboardHeader from '../app/Components/DashboardHeader';
+import { Providers } from './providers';
 
 interface UserData {
   name: string;
@@ -32,17 +33,20 @@ export default function RootLayout({
 }>) { 
    
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        
       <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
       >
-        {children}
+        <Providers>
+            {children}
+        </Providers>
       </ThemeProvider>
       </body>
     </html>

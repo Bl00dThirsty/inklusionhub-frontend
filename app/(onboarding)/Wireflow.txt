@@ -1,0 +1,39 @@
+Ici on decrit le schema d'avancé d'un utilisateur allant de l'inscription sur la page Sign-up à la page de Dashboard.
+
+1.Écran 1 — Inscription rapide (Register)
+  Objectif : créer un compte en 1–2 minutes.
+  Champs : Prénom, Nom, Email, Mot de passe.
+  Actions : bouton Continuer (valide minimal), lien Se connecter.
+  Feedback : validation inline, indicateur force mot de passe.
+  Après soumission : créer user minimal + rediriger vers Onboarding Étape 1.
+
+2. Écran 2 — Onboarding Étape 1 : Choix du rôle
+  Objectif : connaître le rôle principal (peut en choisir plusieurs).
+  Options (cartes) : Malentendant, Entendant, Traducteur LSF, Employeur, Apprenant.
+  UI : cartes illustrées, possibilité multi‑sélection, bouton Suivant.
+  Details : expliquer brièvement ce que chaque rôle débloque.
+
+4. Écran 3 — Onboarding Étape 2 : Compléter profil de base
+   Objectif : collecter infos essentielles.
+   Champs : Photo (optionnelle), Numéro de téléphone, Adresse, Profession.
+   Si rôle Employeur sélectionné : bouton Ajouter profil entreprise (page dédiée).
+   Si rôle Traducteur sélectionné : bouton Ajouter profil traducteur (page dédiée).
+   Actions : Sauvegarder et continuer / Passer.
+
+5. Écran 4 — Onboarding Étape 3 : Profils avancés (modals ou pages dédiées)
+   Employeur :
+       Nom entreprise, Domaine d’activité, Type d’entreprise, Désignation, Adresse entreprise.
+   Traducteur :
+       Niveau, Années d’expérience, Qualifications, Compétences (tags), Disponibilités (jours/heures).
+   Malentendant / Apprenant / Entendant :
+       champs optionnels (degré perte auditive, préférences d’apprentissage, langues).
+   Actions : Enregistrer profil (création OneToOne).
+
+6. Écran 5 — Onboarding Étape 4 : Préférences & Notifications
+    Objectif : configurer notifications et accessibilité.
+    Options : notifications email/push, sous‑titres automatiques, LSF vidéo par défaut.
+    Actions : Terminer (redirection vers Dashboard).
+
+
+
+Sign-up -> role-selection -> basic-profile -> advanced-profiles -> preferences

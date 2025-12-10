@@ -55,7 +55,7 @@ export default function ChatLayout() {
           onSelectUser={setActiveUser}
           className="w-full"
         />
-      </div>*/}
+      </div> */}
 
       {/* Zone de messages à droite */}
       <div className="md:col-span-9 flex flex-col px-4 py-2 flex-1">

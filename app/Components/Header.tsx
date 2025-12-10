@@ -19,19 +19,19 @@ export default function Header() {
         <Link href="/" className="text-blue-600">Accueil</Link>
         <Link href="/Communication" className="text-black">Communication</Link>
         <Link href="/formation" className="text-black">Formation</Link>
-        <Link href="/ViePro" className="text-black">Emplois</Link>
-        <Link href="/VieCom" className="text-black">Communauté</Link>
+        <Link href="/ViePro/landing_page/" className="text-black">Emplois</Link>
+        <Link href="/VieCom/landing_page/" className="text-black">Communauté</Link>
       </nav>
       {/* Actions */}
       <div className="flex gap-2">
         <button 
           onClick={() => router.push(`/sign-up/`)}
-          className="px-4 py-1 rounded-full text-sm text-white" style={{ backgroundColor: "#82EFCF" }}>
+          className="px-6 py-2 rounded-full text-sm text-blue-600 hover:scale-105" style={{ backgroundColor: "#82EFCF" }}>
           S'inscrire
         </button>
         <button 
           onClick={() => router.push(`/sign-in/`)}
-          className="px-4 py-1 bg-blue-600 text-white rounded-full text-sm">
+          className="px-6 py-2 bg-blue-600 text-white rounded-full text-sm hover:scale-105">
           Connexion
         </button>
       </div>

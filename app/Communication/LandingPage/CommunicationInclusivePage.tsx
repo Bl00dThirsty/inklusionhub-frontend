@@ -1,4 +1,7 @@
 // app/communication-inclusive/page.tsx
+"use client";
+
+import { useRouter } from 'next/navigation';
 import React from 'react';
 import { 
   Volume2, 
@@ -18,6 +21,7 @@ import {
 } from 'lucide-react';
 
 export default function CommunicationInclusivePage() {
+   const router = useRouter();
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       
@@ -323,6 +327,12 @@ export default function CommunicationInclusivePage() {
           <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
             Rejoignez des milliers d'utilisateurs qui ont déjà franchi le pas vers une communication véritablement inclusive.
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button onClick={() => router.push(`/sign-up/`)} className="bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-colors">
+                Créer un compte
+              </button>
+              
+            </div>
          {/*<div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button className="bg-blue-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-blue-700 transition-all transform hover:scale-105 shadow-lg">
               S'inscrire gratuitement

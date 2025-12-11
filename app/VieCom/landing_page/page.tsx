@@ -163,7 +163,7 @@ export default function VieComPage() {
             </div>
 
             {/* Translator Services avec carousel */}
-            <div className="bg-white rounded-2xl shadow-lg p-8 mb-16 border border-blue-100">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl shadow-lg p-8 mb-16 border border-blue-100">
               <div className="flex items-center gap-4 mb-8">
                 <div className="p-3 bg-blue-100 rounded-lg">
                   <VideoCameraIcon className="h-8 w-8 text-blue-600" />
@@ -264,7 +264,7 @@ export default function VieComPage() {
                     className="bg-gradient-to-br from-white to-blue-50 p-8 rounded-2xl border border-blue-100 hover:shadow-xl transition-shadow duration-300 group"
                   >
                     <div className="flex items-center gap-4 mb-6">
-                      <div className="w-12 h-12 bg-blue-400 rounded-lg flex items-center justify-center text-white font-bold text-xl group-hover:scale-110 transition-transform">
+                      <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-white font-bold text-xl group-hover:scale-110 transition-transform">
                         {index + 1}
                       </div>
                       <h4 className="text-xl font-semibold text-black">{eventType.type}</h4>

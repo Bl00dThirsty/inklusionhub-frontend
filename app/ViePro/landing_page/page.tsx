@@ -12,21 +12,25 @@ export default function VieProPage() {
     {
       icon: <BriefcaseIcon className="h-10 w-10" />,
       title: "Offres d'emploi inclusives",
+      color: 'text-blue-500 bg-blue-50',
       description: "Des opportunités spécialement adaptées pour les personnes sourdes et malentendantes dans des entreprises engagées pour l'inclusion."
     },
     {
       icon: <UserGroupIcon className="h-10 w-10" />,
       title: "Recrutement adapté",
+      color: 'text-purple-500 bg-purple-50',
       description: "Processus de recrutement pensé pour valoriser les compétences au-delà des barrières de communication."
     },
     {
       icon: <DocumentCheckIcon className="h-10 w-10" />,
       title: "Profils professionnels",
+      color: 'text-green-500 bg-green-50',
       description: "Créez votre profil professionnel, déposez votre CV et mettez en avant vos compétences de manière accessible."
     },
     {
       icon: <CalendarDaysIcon className="h-10 w-10" />,
       title: "Entretiens adaptés",
+      color: 'text-indigo-500 bg-indigo-50',
       description: "Planifiez des entretiens avec interprétation LSF ou des aménagements selon vos besoins spécifiques."
     }
   ];
@@ -114,7 +118,8 @@ export default function VieProPage() {
                   key={index} 
                   className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
                 >
-                  <div className="text-blue-600 mb-4">
+                  <div 
+                   className={`mb-4 w-14 h-14 rounded-xl flex items-center justify-center ${feature.color}`}>
                     {feature.icon}
                   </div>
                   <h3 className="text-xl font-semibold text-black mb-3">
@@ -152,7 +157,7 @@ export default function VieProPage() {
         </section>
 
         {/* Stats Section */}
-        <section className="py-16 bg-gradient-to-r from-blue-50 to-green-50">
+        <section className="py-16 bg-gradient-to-r from-blue-100 to-green-100">
           <div className="container mx-auto px-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
               <div>

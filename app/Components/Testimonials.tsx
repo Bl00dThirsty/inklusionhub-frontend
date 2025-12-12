@@ -31,7 +31,7 @@ export default function Testimonials() {
         {people.map((person, i) => (
           <div
             key={i}
-            className="bg-white px-6 py-6 rounded-xl shadow-sm border flex flex-col"
+            className="bg-white px-6 py-6 rounded-xl shadow-sm  flex flex-col"
           >
             {/* Ligne photo + nom */}
             <div className="flex items-center gap-4 mb-4">

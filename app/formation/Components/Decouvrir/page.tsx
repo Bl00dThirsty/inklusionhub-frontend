@@ -1,14 +1,13 @@
 import Header from "@/app/Components/Header";
+import DiscoverFormation from "./DiscoverFormation";
 import Footer from "@/app/Components/Footer";
-import FormationsPage from "./Components/LandingPage/FormationsPage";
 
-
-export default function FormationPage() {
+export default function discoverFormation() {
 
   return (
     <div>
       <Header />
-          <FormationsPage />
+          <DiscoverFormation />
        
       <Footer />
     </div>

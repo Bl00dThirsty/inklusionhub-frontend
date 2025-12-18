@@ -6,12 +6,38 @@ import {
   MessageSquare, Calendar, BookOpen, Briefcase, Users, TrendingUp,
   ArrowRight, Plus, Clock, CheckCircle, Star, Bell, Download
 } from 'lucide-react';
+import { useGetCurrentUserQuery } from '@/state/api';
+
 
 // Types
 interface UserData {
+  id: string;
   name: string;
+  forename: string;
+  email: string;
   role: string;
-  onboardingProgress: number;
+  phone?: string;
+  avatar?: string;
+  adresse?: string;
+  Profession?: string;
+  onboarding_completed: boolean;
+  onboarding_step: number;
+  langue_parlee: string[];
+  // Champs spécifiques selon le rôle
+  company_name?: string;
+  niveau_expertise?: string;
+  niveau_perte_auditive?: string;
+  Jour_disponible?: string;// Pour traducteur
+  Creneau_horaire_disponible?: string;// Pour traducteur
+  Tarif_horaire?: number;// Pour traducteur
+  
+  Domaine_activity?: string;//Pour employeur
+  Type_company?: string;//Pour employeur
+  Adresse_company?: string;//Pour employeur
+  Taille_Company?: string;//Pour employeur
+  Site_web?: string;//Pour employeur
+  secondary_roles?: string[];
+  preferences?: string[];
 }
 
 interface QuickAction {
@@ -21,11 +47,12 @@ interface QuickAction {
   icon: React.ReactNode;
   color: string;
   action: string;
+  link?: string;
 }
 
 interface ActivityItem {
   id: number;
-  type: 'forum' | 'announcement' | 'translator' | 'achievement';
+  type: 'forum' | 'announcement' | 'translator' | 'achievement' | 'profile_update';
   title: string;
   description: string;
   time: string;
@@ -33,26 +60,76 @@ interface ActivityItem {
 }
 
 export default function DashboardPage() {
+  const { data: apiUserData, isLoading, error, refetch } = useGetCurrentUserQuery();
+  
   const [userData, setUserData] = useState<UserData>({
-    name: 'User',
+    id: '',
+    name: '',
+    forename: '',
+    email: '',
     role: 'malentendant',
-    onboardingProgress: 85
+    phone: '',
+    avatar: '',
+    adresse: '',
+    Profession: '',
+    onboarding_completed: false,
+    onboarding_step: 1,
+    langue_parlee: []
   });
 
   const [quickActions, setQuickActions] = useState<QuickAction[]>([]);
   const [activityFeed, setActivityFeed] = useState<ActivityItem[]>([]);
-
+  
   // Initialiser les données selon le rôle
+  // Mettre à jour les données utilisateur quand l'API répond
   useEffect(() => {
-    const savedData = localStorage.getItem('userData');
-    if (savedData) {
-      const parsedData = JSON.parse(savedData);
-      setUserData({
-        name: parsedData.basicProfile?.firstName || 'Utilisateur',
-        role: parsedData.roles?.[0] || 'malentendant',
-        onboardingProgress: 85
-      });
+  if (apiUserData) {
+    // console.log('=== DEBUG API RESPONSE ===');
+    // console.log('Type:', typeof apiUserData);
+    // console.log('Full response:', apiUserData);
+    // console.log('Has user property?', 'user' in apiUserData);
+    // console.log('Keys:', Object.keys(apiUserData));
+    // console.log('Role from API:', apiUserData.role || apiUserData.user?.role);
+    // console.log('==========================');
+    
+    // Vérifiez la structure exacte
+    let user;
+    
+    // Essayez différentes structures possibles
+    if (apiUserData.user) {
+      // Structure: { success: true, user: {...} }
+      user = apiUserData.user;
+    } else if (apiUserData.id) {
+      // Structure: user directement
+      user = apiUserData;
+    } else {
+      console.error('Structure API inattendue:', apiUserData);
+      return;
     }
+    
+    setUserData({
+      id: user.id || '',
+      name: user.name || '',
+      forename: user.forename || '',
+      email: user.email || '',
+      role: user.role || 'malentendant',
+      phone: user.phone || '',
+      avatar: user.avatar || '',
+      adresse: user.adresse || '',
+      Profession: user.Profession || '',
+      onboarding_completed: user.onboarding_completed || false,
+      onboarding_step: user.onboarding_step || 1,
+      langue_parlee: Array.isArray(user.langue_parlee) ? user.langue_parlee : [],
+      company_name: user.company_name,
+      niveau_expertise: user.niveau_expertise,
+      niveau_perte_auditive: user.niveau_perte_auditive
+    });
+  }
+}, [apiUserData]);
+
+  // Initialiser les actions rapides et l'activité
+  useEffect(() => {
+    if (!userData.role) return;
     
     // Actions rapides selon le rôle
     const baseActions: QuickAction[] = [
@@ -61,7 +138,7 @@ export default function DashboardPage() {
         title: 'Messages récents',
         description: '3 conversations non lues',
         icon: <MessageSquare className="h-6 w-6" />,
-        color: 'bg-blue-500',
+        color: 'bg-blue-200',
         action: 'Voir messages'
       },
       {
@@ -69,7 +146,7 @@ export default function DashboardPage() {
         title: 'Événements à venir',
         description: '2 événements cette semaine',
         icon: <Calendar className="h-6 w-6" />,
-        color: 'bg-green-500',
+        color: 'bg-green-200',
         action: 'Voir calendrier'
       },
       {
@@ -77,7 +154,7 @@ export default function DashboardPage() {
         title: 'Cours recommandés',
         description: 'LSF Niveau 2 - 75% complété',
         icon: <BookOpen className="h-6 w-6" />,
-        color: 'bg-purple-500',
+        color: 'bg-purple-200',
         action: 'Continuer'
       },
       {
@@ -85,7 +162,7 @@ export default function DashboardPage() {
         title: 'Offres pertinentes',
         description: '5 nouvelles offres correspondantes',
         icon: <Briefcase className="h-6 w-6" />,
-        color: 'bg-orange-500',
+        color: 'bg-orange-200',
         action: 'Explorer'
       },
     ];
@@ -166,13 +243,22 @@ export default function DashboardPage() {
     ]);
 
   }, [userData.role]);
-  const onboard = Number(localStorage.getItem("OnboardProgress")) || 0;
+ 
+  const calculateOnboardingProgress = () => {
+    if (userData.onboarding_completed) return 100;
+    return Math.min(userData.onboarding_step * 20, 100);
+  };
+
+  const onboardingProgress = calculateOnboardingProgress();
+  
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <DashboardHeader 
-        userName={userData.name}
+       userName={`${userData.forename} ${userData.name}`}
         userRole={userData.role}
+        userEmail={userData.email}
+        userAvatar={userData.avatar}
       />
 
       <main className="p-6">
@@ -182,7 +268,7 @@ export default function DashboardPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                  Bonjour, {userData.name} 
+                  Bonjour, {userData.name} {userData.forename}
                 </h1>
                 <p className="text-blue-100 text-lg mb-4">
                   Bienvenue sur votre tableau de bord personnalisé
@@ -204,11 +290,11 @@ export default function DashboardPage() {
                     <div className="w-48 bg-white/30 rounded-full h-2">
                       <div 
                         className="bg-white h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${onboard}%` }}
+                        style={{ width: `${onboardingProgress}%` }}
                       />
                     </div>
                     <span className="text-sm font-medium">
-                      {onboard}% complété
+                      {onboardingProgress}% complété
                     </span>
                   </div>
                 </div>

@@ -32,30 +32,199 @@ export interface User {
   Adresse_company?: string;//Pour employeur
   Taille_Company?: string;//Pour employeur
   Site_web?: string;//Pour employeur
+  secondary_roles?: string[];
+  onboarding_completed?:boolean;
+  onboarding_step?: number;
+  preferences?: string[];
 
 }
 
+// Interface pour la mise à jour des rôles
+export interface UpdateRolesRequest {
+  role: string;
+  secondary_roles: string[];
+}
+
+export interface UpdateRolesResponse {
+  message: string;
+  user: User;
+}
+
+export interface AdvancedProfileRequest {
+  // Pour employeur
+  company_name?: string;
+  Domaine_activity?: string;
+  Type_company?: string;
+  Adresse_company?: string;
+  Taille_Company?: string;
+  Site_web?: string;
+  
+  // Pour traducteur
+  certification?: string;
+  Annee_experience?: number;
+  niveau_expertise?: string;
+  Competence?: string;
+  Jour_disponible?: string;
+  Creneau_horaire_disponible?: string;
+  Tarif_horaire?: number;
+  
+  // Pour malentendant
+  niveau_perte_auditive?: string;
+  status_utilisez_vous_un_appareil_auditif?: boolean;
+  level_en_LSF?: string;
+  
+  // Pour apprenant
+  preference_apprentissage?: string[];
+  
+  // Commun (langues)
+  langue_parlee?: string[];
+}
+
+export interface AdvancedProfileResponse {
+  success: boolean;
+  message: string;
+  user: User;
+  next_step?: string;
+}
+
+export interface PreferencesRequest {
+  email_notifications?: boolean;
+  push_notifications?: boolean;
+  // marketing_emails?: boolean;
+  // auto_subtitles?: boolean;
+  // sign_language_videos?: boolean;
+  // high_contrast_mode?: boolean;
+  // font_size?: string;
+  timezone?: string;
+  language?: string;
+  profile_visibility?: string;
+  show_online_status?: boolean;
+  langue_parlee?: string[];
+}
+
+export interface PreferencesResponse {
+  success: boolean;
+  message: string;
+  user: User;
+  redirect: string;
+}
+
+
 export const api = createApi({
-    baseQuery: fetchBaseQuery({ 
-     baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
-     prepareHeaders: (headers) => {
-        const token = localStorage.getItem("accessToken");
-        if (token) {
-          headers.set("Authorization", `Bearer ${token}`);
-        }
-        return headers;
-      }, }),
-    reducerPath: "api",
-    tagTypes: ["Users"],
-
-    endpoints: (build) => ({
-
-       getCurrentUser: build.query<User, void>({
+  baseQuery: fetchBaseQuery({ 
+    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000',
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("access_token"); 
+      console.log('Token récupéré:', token); 
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+        console.log('Headers Authorization:', headers.get('Authorization'));
+      }
+      return headers;
+    },
+  }),
+  reducerPath: "api",
+  tagTypes: ["User", "Profile"],
+  
+  endpoints: (build) => ({
+    // Récupérer l'utilisateur 
+    getCurrentUser: build.query<User, void>({
       query: () => '/user/me/',
-      providesTags: ["Users"],
+      providesTags: ["User"],
+    }),
+    
+    // Mettre à jour les rôles (onboarding étape 2)
+    updateUserRoles: build.mutation<UpdateRolesResponse, UpdateRolesRequest>({
+      query: (rolesData) => ({
+        url: '/onboarding/roles/',
+        method: 'PUT',
+        body: rolesData,
+      }),
+      invalidatesTags: ["User"],
     }),
 
-    })
+    // Inscription
+    // registerUser: build.mutation<any, {
+    //   email: string;
+    //   name: string;
+    //   forename: string;
+    //   password: string;
+    // }>({
+    //   query: (userData) => ({
+    //     url: '/register/',
+    //     method: 'POST',
+    //     body: userData,
+    //   }),
+    // }),
+    
+    // // Login (pour plus tard)
+    // loginUser: build.mutation<any, {
+    //   email: string;
+    //   password: string;
+    // }>({
+    //   query: (credentials) => ({
+    //     url: '/login/',
+    //     method: 'POST',
+    //     body: credentials,
+    //   }),
+    // }),
+    updateBasicProfile: build.mutation<any, FormData>({
+      query: (formData) => ({
+        url: '/onboarding/basic-profile/',
+        method: 'PUT',
+        body: formData,
+      }),
+      invalidatesTags: ["User"],
+    }),
+
+    updateAdvancedProfile: build.mutation<AdvancedProfileResponse, AdvancedProfileRequest>({
+      query: (profileData) => ({
+        url: '/onboarding/advanced-profile/',
+        method: 'PUT',
+        body: profileData,
+      }),
+      invalidatesTags: ["User"],
+    }),
+
+    // Sauvegarder les préférences et terminer l'onboarding
+    updatePreferences: build.mutation<PreferencesResponse, PreferencesRequest>({
+      query: (preferencesData) => ({
+        url: '/onboarding/preferences/',
+        method: 'PUT',
+        body: preferencesData,
+      }),
+      invalidatesTags: ["User"],
+    }),
+
+     // Marquer l'onboarding comme terminé (optionnel)
+    completeOnboarding: build.mutation({
+      query: () => ({
+        url: '/onboarding/complete/',
+        method: 'POST',
+      }),
+      invalidatesTags: ["User"],
+    }),
+
+    getTempData: build.query<{company_name: string; niveau_expertise: string}, void>({
+      queryFn: () => ({
+        data: {
+          company_name: localStorage.getItem('temp_company_name') || '',
+          niveau_expertise: localStorage.getItem('temp_translator_level') || ''
+        }
+      }),
+    }),
+  }),
 });
 
-export const { useGetCurrentUserQuery } = api
+// Exportez les hooks
+export const { 
+  useGetCurrentUserQuery,
+  useUpdateUserRolesMutation,
+  // useRegisterUserMutation,
+  // useLoginUserMutation,
+  useUpdateBasicProfileMutation,
+  useUpdateAdvancedProfileMutation,
+  useUpdatePreferencesMutation,
+  useCompleteOnboardingMutation,
+  useGetTempDataQuery,
+} = api;

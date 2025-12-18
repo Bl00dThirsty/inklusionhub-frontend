@@ -5,11 +5,13 @@ import { useState, useEffect, useRef } from 'react';
 import { Bell, Search, User, Menu, LogOut, Settings, MessageSquare, Calendar } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import Image from 'next/image';
+import { useGetCurrentUserQuery } from '@/state/api';
 
 interface DashboardHeaderProps {
   userName: string;
   userRole: string;
   userAvatar?: string;
+  userEmail: string;
 }
 
 export default function DashboardHeader({ 
@@ -25,6 +27,12 @@ export default function DashboardHeader({
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileSearchRef = useRef<HTMLDivElement>(null);
+
+//   const { data: userData } = useGetCurrentUserQuery(); // ou équivalent
+
+// // Et utiliser :
+// const userName = userData?.name || userData?.forename || 'Utilisateur';
+// const userAvatar = userData?.avatar;
 
   // Fermer les menus en cliquant à l'extérieur
   useEffect(() => {
@@ -159,7 +167,7 @@ export default function DashboardHeader({
                       {userAvatar ? (
                         <Image
                           src={userAvatar}
-                          alt={userName}
+                          alt="U"
                           width={40}
                           height={40}
                           className="rounded-full"
@@ -197,7 +205,7 @@ export default function DashboardHeader({
                     <button
                       onClick={() => {
                         setShowMobileMenu(false);
-                        router.push('/dashboard/profile');
+                        router.push('/account/profil');
                       }}
                       className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
@@ -207,7 +215,7 @@ export default function DashboardHeader({
                     <button
                       onClick={() => {
                         setShowMobileMenu(false);
-                        router.push('/dashboard/profile');
+                        router.push('/account/profil');
                       }}
                       className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >

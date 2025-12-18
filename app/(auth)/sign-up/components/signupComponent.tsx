@@ -22,37 +22,68 @@ export default function SignupComponent() {
     });
   };
 
+  const validatePassword = (password: string): string | null => {
+  if (password.length < 8) {
+    return "Le mot de passe doit contenir au moins 8 caractères";
+  }
+
+  if (!/\d/.test(password)) {
+    return "Le mot de passe doit contenir au moins un chiffre";
+  }
+
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    return "Le mot de passe doit contenir au moins un caractère spécial";
+  }
+
+  return null;
+};
+
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // Logique d'inscription ici
-    try {
-        // TODO: Appel API pour créer l'utilisateur
-        const response = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            firstName: formData.name,
-            lastName: formData.forename,
-            email: formData.email,
-            password: formData.password
-          }),
-        });
-        
-        if (response.ok) {
-          // Rediriger vers l'onboarding étape 1
-          const current = Number(localStorage.getItem("OnboardProgress")) || 0;
-          const updated = current + 20;
-          localStorage.setItem("OnboardProgress", String(updated));
-          router.push('/role-selection');
-        } else {
-          const error = await response.json();
-          setErrors({ submit: error.message || 'Erreur lors de l\'inscription' });
-        }
-      } catch (error) {
-        setErrors({ submit: 'Erreur de connexion au serveur' });
-      }
-    console.log(formData);
-  };
+  e.preventDefault();
+  // 🔐 Validation mot de passe
+  const passwordError = validatePassword(formData.password);
+  if (passwordError) {
+    setErrors({ password: passwordError });
+    return;
+  }
+
+  try {
+    const response = await fetch('http://localhost:8000/register/', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        name: formData.name,
+        forename: formData.forename,
+        email: formData.email,
+        password: formData.password
+      }),
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok && data.success) {
+      // 1. Stocker le token d'accès JWT
+      localStorage.setItem('access_token', data.tokens.access);
+      localStorage.setItem('refresh_token', data.tokens.refresh);
+      
+      console.log('Token stocké:', data.tokens.access.substring(0, 20) + '...');
+      // 2. Stocker les infos utilisateur 
+      //localStorage.setItem('user', JSON.stringify(data.user));      
+      // 3. Rediriger vers l'onboarding
+      router.push('/role-selection');
+    } else {
+      setErrors({ 
+        submit: data.message || data.error || 'Erreur lors de l\'inscription' 
+      });
+    }
+  } catch (error) {
+    console.error('Erreur:', error);
+    setErrors({ submit: 'Erreur de connexion au serveur' });
+  }
+};
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
@@ -137,6 +168,11 @@ export default function SignupComponent() {
           />
         </div>
       </div>
+      {errors.password && (
+          <p className="mt-1 text-sm text-red-600">
+             {errors.password}
+          </p>
+      )}
 
       {/* Terms & Conditions */}
       <div className="text-sm text-center text-gray-600">

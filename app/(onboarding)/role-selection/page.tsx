@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check } from 'lucide-react';
+import { useUpdateUserRolesMutation } from '@/state/api';
 
 const roles = [
   {
@@ -55,26 +56,78 @@ const roles = [
 export default function RoleSelectionPage() {
   const router = useRouter();
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  //const [error, setError] = useState<string | null>(null);
+  const [updateUserRoles, { isLoading, error }] = useUpdateUserRolesMutation();
+
+  // Vérifier si l'utilisateur est authentifié
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      // Rediriger vers l'inscription si pas de token
+      router.push('/sign-in');
+    }
+  }, [router]);
 
   const toggleRole = (roleId: string) => {
-    setSelectedRoles(prev => 
-      prev.includes(roleId) 
-        ? prev.filter(id => id !== roleId)
-        : [...prev, roleId]
-    );
+    // Si c'est le premier rôle, il devient le rôle principal
+    // Les suivants sont secondaires
+    setSelectedRoles(prev => {
+      if (prev.includes(roleId)) {
+        return prev.filter(id => id !== roleId);
+      } else {
+        return [...prev, roleId];
+      }
+    });
   };
 
-  const handleContinue = () => {
-    if (selectedRoles.length > 0) {
-      // TODO: Sauvegarder les rôles sélectionnés via API
-      localStorage.setItem('userRoles', JSON.stringify(selectedRoles));
+  const handleContinue = async () => {
+    if (selectedRoles.length === 0) return;
+    
+    // Préparer les données pour l'API
+    const rolesData = {
+      role: selectedRoles[0], // Premier rôle = rôle principal
+      secondary_roles: selectedRoles.slice(1), // Les autres = rôles secondaires
+    };
+
+    const token = localStorage.getItem('access_token');
+  console.log('Token avant envoi:', token);
+  console.log('Token valide?', token && token.length > 100);
+    
+    try {
+      // 1. Envoyer les rôles à l'API via RTK Query
+      const response = await updateUserRoles(rolesData).unwrap();
+      
+      // 2. Mettre à jour la progression locale
       const current = Number(localStorage.getItem("OnboardProgress")) || 0;
       const updated = current + 20;
-
       localStorage.setItem("OnboardProgress", String(updated));
+      
+      // 3. Stocker localement les rôles
+      localStorage.setItem('userRoles', JSON.stringify(selectedRoles));
+      
+      // 4. Mettre à jour les infos utilisateur dans localStorage
+      if (response.user) {
+        localStorage.setItem('user', JSON.stringify(response.user));
+      }
+      
+      // 5. Rediriger vers l'étape suivante
       router.push('/basic-profile');
+      
+    } catch (err: any) {
+      // Gérer les erreurs
+      console.error('Erreur lors de la sauvegarde:', err);
+      
+      // Afficher le message d'erreur
+      const errorMessage = err?.data?.message || 
+                          err?.data?.detail || 
+                          'Erreur lors de la sauvegarde des rôles';
+      
+      // Vous pouvez ajouter un state pour afficher l'erreur
+      // setApiError(errorMessage);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12 px-4 sm:px-6 lg:px-8">
@@ -88,10 +141,18 @@ export default function RoleSelectionPage() {
             Sélectionnez un ou plusieurs rôles qui correspondent à votre profil.
             Cela nous aide à personnaliser votre expérience sur InklusionHub.
           </p>
-          <div className="mt-4 inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-medium">
+          {/* <div className="mt-4 inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-medium">
             <span className="mr-2"></span>
             Vous pourrez modifier ces choix plus tard
+          </div> */}
+          {/* Note importante */}
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-700">
+              <strong>Note :</strong> Le premier rôle que vous sélectionnez deviendra votre <strong>rôle principal</strong>.
+              Les rôles suivants seront vos <strong>rôles secondaires</strong>.
+            </p>
           </div>
+        
         </div>
 
         {/* Grille des rôles */}

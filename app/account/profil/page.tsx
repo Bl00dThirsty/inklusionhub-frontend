@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useGetCurrentUserQuery } from '../../../state/api';
+import { useGetCurrentUserQuery } from '@/state/api';
 import { UserProfileForm } from '../../Components/UserProfileForm';
 import DashboardHeader from '../../Components/DashboardHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../Components/ui/card';
@@ -142,8 +142,10 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <DashboardHeader 
-        userName={user.name}
+        userName={`${user.forename} ${user.name}`}
         userRole={user.role}
+        userEmail={user.email}
+        userAvatar={user.avatar}
       />
       
       <div className="container mx-auto px-4 py-8">

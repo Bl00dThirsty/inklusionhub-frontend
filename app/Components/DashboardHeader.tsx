@@ -6,6 +6,7 @@ import { Bell, Search, User, Menu, LogOut, Settings, MessageSquare, Calendar } f
 import { ThemeToggle } from './ThemeToggle';
 import Image from 'next/image';
 import { useGetCurrentUserQuery } from '@/state/api';
+import { useAuth } from '@/app/(auth)/sign-in/context/authContext';
 
 interface DashboardHeaderProps {
   userName: string;
@@ -28,12 +29,15 @@ export default function DashboardHeader({
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileSearchRef = useRef<HTMLDivElement>(null);
 
-//   const { data: userData } = useGetCurrentUserQuery(); // ou équivalent
-
-// // Et utiliser :
-// const userName = userData?.name || userData?.forename || 'Utilisateur';
-// const userAvatar = userData?.avatar;
-
+  const { user: authUser, logout } = useAuth(); // Appel de la fonction logout depuis le Authcontexte
+   // TODO: Implémenter la déconnexion
+  const handleLogout = async () => {
+    try {
+      await logout(); // Appel de la fonction logout
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion :", error);
+    }
+  };
   // Fermer les menus en cliquant à l'extérieur
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -75,15 +79,15 @@ export default function DashboardHeader({
     return baseItems;
   };
 
-  const handleLogout = () => {
-    // TODO: Implémenter la déconnexion
-    localStorage.removeItem('userData');
-    const current = Number(localStorage.getItem("OnboardProgress")) || 0;
-      const updated = current * 0;
+  // const handleLogout = () => {
+  //   // TODO: Implémenter la déconnexion
+  //   localStorage.removeItem('userData');
+  //   const current = Number(localStorage.getItem("OnboardProgress")) || 0;
+  //     const updated = current * 0;
 
-      localStorage.setItem("OnboardProgress", String(updated));
-    router.push('/role-selection');
-  };
+  //     localStorage.setItem("OnboardProgress", String(updated));
+  //   router.push('/role-selection');
+  // };
 
   const handleMobileNavigation = (href: string) => {
     router.push(href);

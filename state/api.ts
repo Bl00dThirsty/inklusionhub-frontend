@@ -157,17 +157,17 @@ export const api = createApi({
     //   }),
     // }),
     
-    // // Login (pour plus tard)
-    // loginUser: build.mutation<any, {
-    //   email: string;
-    //   password: string;
-    // }>({
-    //   query: (credentials) => ({
-    //     url: '/login/',
-    //     method: 'POST',
-    //     body: credentials,
-    //   }),
-    // }),
+    // Login (pour plus tard)
+    loginUser: build.mutation<any, {
+      email: string;
+      password: string;
+    }>({
+      query: (credentials) => ({
+        url: '/login/',
+        method: 'POST',
+        body: credentials,
+      }),
+    }),
     updateBasicProfile: build.mutation<any, FormData>({
       query: (formData) => ({
         url: '/onboarding/basic-profile/',
@@ -221,7 +221,7 @@ export const {
   useGetCurrentUserQuery,
   useUpdateUserRolesMutation,
   // useRegisterUserMutation,
-  // useLoginUserMutation,
+  useLoginUserMutation,
   useUpdateBasicProfileMutation,
   useUpdateAdvancedProfileMutation,
   useUpdatePreferencesMutation,

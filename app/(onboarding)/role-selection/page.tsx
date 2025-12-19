@@ -98,11 +98,6 @@ export default function RoleSelectionPage() {
       // 1. Envoyer les rôles à l'API via RTK Query
       const response = await updateUserRoles(rolesData).unwrap();
       
-      // 2. Mettre à jour la progression locale
-      const current = Number(localStorage.getItem("OnboardProgress")) || 0;
-      const updated = current + 20;
-      localStorage.setItem("OnboardProgress", String(updated));
-      
       // 3. Stocker localement les rôles
       localStorage.setItem('userRoles', JSON.stringify(selectedRoles));
       

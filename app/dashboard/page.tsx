@@ -7,6 +7,7 @@ import {
   ArrowRight, Plus, Clock, CheckCircle, Star, Bell, Download
 } from 'lucide-react';
 import { useGetCurrentUserQuery } from '@/state/api';
+import { useRouter } from 'next/navigation';
 
 
 // Types
@@ -60,6 +61,7 @@ interface ActivityItem {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { data: apiUserData, isLoading, error, refetch } = useGetCurrentUserQuery();
   
   const [userData, setUserData] = useState<UserData>({
@@ -79,6 +81,15 @@ export default function DashboardPage() {
 
   const [quickActions, setQuickActions] = useState<QuickAction[]>([]);
   const [activityFeed, setActivityFeed] = useState<ActivityItem[]>([]);
+
+   // Vérifier si l'utilisateur est authentifié
+    useEffect(() => {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        // Rediriger vers l'inscription si pas de token
+        router.push('/sign-in');
+      }
+    }, [router]);
   
   // Initialiser les données selon le rôle
   // Mettre à jour les données utilisateur quand l'API répond

@@ -1,4 +1,3 @@
-// context/AuthContext.tsx
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -26,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  
+
   useEffect(() => {
     // Récupérer l'utilisateur depuis localStorage au chargement
     const storedUser = localStorage.getItem('user');
@@ -37,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(JSON.parse(storedUser));
       } catch (error) {
         console.error('Error parsing stored user:', error);
+        localStorage.clear();
       }
     }
     
@@ -44,10 +44,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
   
   const login = (tokens: any, userData: User) => {
+    console.log('AuthContext.login appelé avec:', { tokens, userData });
+    
+    // Vérifiez que tokens existe et a les propriétés nécessaires
+    if (!tokens) {
+      console.error('Tokens est undefined ou null');
+      return;
+    }
+    
+    if (!tokens.access) {
+      console.error('tokens.access est undefined. Tokens reçus:', tokens);
+      return;
+    }
+    
     localStorage.setItem('access_token', tokens.access);
-    localStorage.setItem('refresh_token', tokens.refresh);
+    localStorage.setItem('refresh_token', tokens.refresh || '');
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
+    
+    console.log('Utilisateur connecté avec succès:', userData.email);
   };
   
   const logout = () => {

@@ -262,14 +262,35 @@ export default function DashboardPage() {
 
   const onboardingProgress = calculateOnboardingProgress();
   
+  const getAvatarUrl = (avatarPath: string | undefined): string => {
+    if (!avatarPath) return '';
+    
+    // Débogage
+    console.log('Avatar path:', avatarPath);
+    
+    // Gestion des différents formats
+    if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
+      return avatarPath;
+    }
+    
+    if (avatarPath.startsWith('/')) {
+      return avatarPath;
+    }
+    
+    // Ajouter le chemin de base de votre backend
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    return `${baseUrl}/media/${avatarPath}`;
+  };
+
+  const avatarUrl = getAvatarUrl(userData.avatar);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <DashboardHeader 
-       userName={`${userData.forename} ${userData.name}`}
+        userName={`${userData.forename} ${userData.name}`}
         userRole={userData.role}
         userEmail={userData.email}
-        userAvatar={userData.avatar}
+        userAvatar={avatarUrl}
       />
 
       <main className="p-6">
@@ -648,7 +669,7 @@ export default function DashboardPage() {
               )}
 
               {/* Widget commun - Statistiques */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              {/* <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
                   Statistiques
                 </h3>
@@ -692,7 +713,7 @@ export default function DashboardPage() {
                     <span className="text-2xl font-bold">156</span>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
           </section>
         </div>

@@ -18,7 +18,8 @@ export default function AdvancedProfilesPage() {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+  const [userRoles, setUserRoles] = useState<string[]>([]);
+
   // RTK Query hooks
   const [updateAdvancedProfile] = useUpdateAdvancedProfileMutation();
   const { data: userData } = useGetCurrentUserQuery();
@@ -59,11 +60,41 @@ export default function AdvancedProfilesPage() {
   const daysOfWeek = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
   useEffect(() => {
-    // Récupérer les rôles depuis l'utilisateur connecté
+    // Récupérer les rôles depuis localStorage
+    const storedUserRoles = localStorage.getItem('userRoles');
+    if (storedUserRoles) {
+      try {
+        // Parser le JSON si c'est une chaîne JSON
+        const parsedRoles = JSON.parse(storedUserRoles);
+        setUserRoles(parsedRoles);
+        console.log('Rôles depuis localStorage:', parsedRoles);
+      } catch (error) {
+        console.log('userRoles n\'est pas un JSON, traitement comme chaîne');
+        // Si ce n'est pas un JSON, c'est peut-être une chaîne simple
+        setUserRoles([storedUserRoles]);
+      }
+    }
+    
+    // Récupérer les rôles depuis l'utilisateur connecté (comme fallback)
     if (userData) {
-      const roles = userData.secondary_roles || [];
+      let roles: string[] = [];
+      
+      // Rôle principal
       if (userData.role) {
-        setSelectedRoles([userData.role, ...roles]);
+        roles.push(userData.role);
+      }
+      
+      // Rôles secondaires
+      if (userData.secondary_roles && Array.isArray(userData.secondary_roles)) {
+        roles = [...roles, ...userData.secondary_roles];
+      }
+      
+      console.log('Rôles depuis userData:', roles);
+      setSelectedRoles(roles);
+      
+      // Si userRoles est vide, utiliser les rôles de userData
+      if (userRoles.length === 0) {
+        setUserRoles(roles);
       }
     }
     
@@ -215,10 +246,8 @@ export default function AdvancedProfilesPage() {
       // Appel API
       const response = await updateAdvancedProfile(profileData).unwrap();
       
-      // Mettre à jour la progression
-      const current = Number(localStorage.getItem("OnboardProgress")) || 0;
-      const updated = current + 20;
-      localStorage.setItem("OnboardProgress", String(updated));
+      // Recuperer les roles dans userRoles
+      const userRoles = localStorage.getItem('userRoles');
       
       // Nettoyer les données temporaires
       localStorage.removeItem('temp_company_name');
@@ -729,7 +758,7 @@ export default function AdvancedProfilesPage() {
         {/* Navigation entre profils */}
         <div className="mb-8">
           <div className="flex flex-wrap gap-3 justify-center">
-            {selectedRoles.includes('employeur') && (
+            {userRoles.includes('employeur') && (
               <button
                 onClick={() => setActiveProfile('employer')}
                 disabled={loading}
@@ -743,7 +772,7 @@ export default function AdvancedProfilesPage() {
                 Profil Employeur
               </button>
             )}
-            {selectedRoles.includes('traducteur') && (
+            {userRoles.includes('traducteur') && (
               <button
                 onClick={() => setActiveProfile('translator')}
                 disabled={loading}
@@ -757,7 +786,8 @@ export default function AdvancedProfilesPage() {
                 Profil Traducteur
               </button>
             )}
-            {(selectedRoles.includes('malentendant') || selectedRoles.includes('apprenant') || selectedRoles.includes('entendant')) && (
+            {(userRoles.includes('malentendant') || userRoles.includes('apprenant') || userRoles.includes('entendant')) && (
+              
               <button
                 onClick={() => setActiveProfile('user')}
                 disabled={loading}

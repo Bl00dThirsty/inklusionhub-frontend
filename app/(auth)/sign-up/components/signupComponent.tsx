@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Eye, EyeOff } from "lucide-react";
 
 export default function SignupComponent() {
   const [formData, setFormData] = useState({
@@ -12,7 +13,7 @@ export default function SignupComponent() {
     password: '',
     role: ''
   });
-
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -152,27 +153,40 @@ export default function SignupComponent() {
        
       <div>
         <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-          Mot de passe
+             Mot de passe
         </label>
-        <div className="mt-1">
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            value={formData.password}
-            onChange={handleChange}
-            className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            placeholder="Entrez un mot de passe"
-          />
-        </div>
-      </div>
+
+      <div className="mt-1 relative">
+        <input
+          id="password"
+          name="password"
+          type={showPassword ? "text" : "password"}
+          autoComplete="new-password"
+          required
+          value={formData.password}
+          onChange={handleChange}
+          className="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          placeholder="Entrez un mot de passe"
+      />
+
+         {/* Bouton show/hide */}
+      <button
+        type="button"
+        onClick={() => setShowPassword(!showPassword)}
+        className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
+        aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+      >
+        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+      </button>
+     </div>
+
       {errors.password && (
-          <p className="mt-1 text-sm text-red-600">
-             {errors.password}
-          </p>
+      <p className="mt-1 text-sm text-red-600">
+        {errors.password}
+      </p>
       )}
+    </div>
+
 
       {/* Terms & Conditions */}
       <div className="text-sm text-center text-gray-600">

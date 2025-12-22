@@ -153,11 +153,6 @@ export default function BasicProfilePage() {
         localStorage.setItem('temp_translator_level', tempTranslatorLevel);
       }
       
-      // Mettre à jour la progression
-      const current = Number(localStorage.getItem("OnboardProgress")) || 0;
-      const updated = current + 20;
-      localStorage.setItem("OnboardProgress", String(updated));
-      
       // Mettre à jour l'utilisateur dans localStorage
       if (response.user) {
         localStorage.setItem('user', JSON.stringify(response.user));

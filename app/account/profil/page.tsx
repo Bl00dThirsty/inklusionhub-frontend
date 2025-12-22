@@ -10,27 +10,152 @@ import { Avatar, AvatarFallback, AvatarImage } from '../../Components/ui/avatar'
 import { Badge } from '../../Components/ui/badge';
 import { Button } from '../../Components/ui/button'
 import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
 
+interface UserData {
+  id: string;
+  name: string;
+  forename: string;
+  email: string;
+  role: string;
+  phone?: string;
+  avatar?: string;
+  adresse?: string;
+  Profession?: string;
+  onboarding_completed: boolean;
+  onboarding_step: number;
+  langue_parlee: string[];
+  // Champs spécifiques selon le rôle
+  company_name?: string;
+  niveau_expertise?: string;
+  niveau_perte_auditive?: string;
+  status_utilisez_vous_un_appareil_auditif?: Boolean;
+  level_en_LSF?: string;
+  Jour_disponible?: string;// Pour traducteur
+  Creneau_horaire_disponible?: string;// Pour traducteur
+  Tarif_horaire?: number;// Pour traducteur
+  Annee_experience?: number;
+  Domaine_activity?: string;//Pour employeur
+  Type_company?: string;//Pour employeur
+  Adresse_company?: string;//Pour employeur
+  Taille_Company?: string;//Pour employeur
+  certification?: string;
+  Site_web?: string;//Pour employeur
+  secondary_roles?: string[];
+  preferences?: string[];
+  createdAt?:string;
+  updatedAt?:string;
+}
 export default function ProfilePage() { 
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<any>({});
-  
-  // Récupérer l'utilisateur connecté via Redux RTK Query
-  const { 
-    data: user, 
+    const { 
+    data: apiUserData, 
     isLoading, 
     isError, 
     error,
     refetch 
-  } = useGetCurrentUserQuery();
+  } = useGetCurrentUserQuery();  
+
+
+  const [user, setUser] = useState<UserData>({
+    id: '',
+    name: '',
+    forename: '',
+    email: '',
+    role: 'malentendant',
+    phone: '',
+    avatar: '',
+    adresse: '',
+    Profession: '',
+    onboarding_completed: false,
+    onboarding_step: 1,
+    langue_parlee: [],
+    company_name: '',
+    niveau_expertise: '',
+    niveau_perte_auditive: '',
+    status_utilisez_vous_un_appareil_auditif: false,
+    level_en_LSF: '',
+    Jour_disponible: '',// Pour traducteur
+    Creneau_horaire_disponible: '',// Pour traducteur
+    Tarif_horaire: 0,// Pour traducteur
+    Annee_experience: 0,
+  Domaine_activity: '',//Pour employeur
+  Type_company: '',//Pour employeur
+  Adresse_company: '',//Pour employeur
+  Taille_Company: '',//Pour employeur
+  certification: '',
+  Site_web: '',//Pour employeur
+  secondary_roles: [],
+  preferences: [],
+  createdAt: '',
+  updatedAt: '',
+  });
+  
+  // Récupérer l'utilisateur connecté via Redux RTK Query
+
+
+  
   
   // Mettre à jour formData quand user est chargé
-  useEffect(() => {
-    if (user) {
-      setFormData(user);
+   useEffect(() => {
+  if (apiUserData) {
+    // console.log('=== DEBUG API RESPONSE ===');
+    // console.log('Type:', typeof apiUserData);
+    // console.log('Full response:', apiUserData);
+    // console.log('Has user property?', 'user' in apiUserData);
+    // console.log('Keys:', Object.keys(apiUserData));
+    // console.log('Role from API:', apiUserData.role || apiUserData.user?.role);
+    // console.log('==========================');
+    
+    // Vérifiez la structure exacte
+    let user;
+    
+    // Essayez différentes structures possibles
+    if (apiUserData.user) {
+      // Structure: { success: true, user: {...} }
+      user = apiUserData.user;
+    } else if (apiUserData.id) {
+      // Structure: user directement
+      user = apiUserData;
+    } else {
+      console.error('Structure API inattendue:', apiUserData);
+      return;
     }
-  }, [user]);
+    
+    setUser({
+      id: user.id || '',
+      name: user.name || '',
+      forename: user.forename || '',
+      email: user.email || '',
+      role: user.role || 'malentendant',
+      phone: user.phone || '',
+      avatar: user.avatar || '',
+      adresse: user.adresse || '',
+      Profession: user.Profession || '',
+      onboarding_completed: user.onboarding_completed || false,
+      onboarding_step: user.onboarding_step || 1,
+      langue_parlee: Array.isArray(user.langue_parlee) ? user.langue_parlee : [],
+      level_en_LSF: user.level_en_LSF || '',
+      company_name: user.company_name,
+      niveau_expertise: user.niveau_expertise,
+      niveau_perte_auditive: user.niveau_perte_auditive,
+      status_utilisez_vous_un_appareil_auditif: user.status_utilisez_vous_un_appareil_auditif || false,
+      Jour_disponible: user.Jour_disponible || '',// Pour traducteur
+      Creneau_horaire_disponible: user.Creneau_horaire_disponible || '',// Pour traducteur
+      Tarif_horaire: user.Tarif_horaire || 0,// Pour traducteur
+      Domaine_activity: user.Domaine_activity || '',//Pour employeur
+      Annee_experience: user.Annee_experience || 0,
+      Type_company: user.Type_company || '',//Pour employeur
+      Adresse_company: user.Adresse_company || '',//Pour employeur
+      Taille_Company: user.Taille_Company || '',//Pour employeur
+      certification: user.certification || '',
+      Site_web: user.Site_web || '',//Pour employeur
+      secondary_roles: Array.isArray(user.secondary_roles) ? user.secondary_roles : [],
+      preferences: Array.isArray(user.preferences) ? user.preferences : [],
+    });
+  }
+}, [apiUserData]);
   
   // Rediriger si erreur d'authentification
   useEffect(() => {
@@ -41,7 +166,7 @@ export default function ProfilePage() {
   }, [isError, error, router]);
   
   const handleInputChange = (field: string, value: any) => {
-    setFormData((prev: any) => ({
+    setUser((prev: any) => ({
       ...prev,
       [field]: value
     }));
@@ -51,7 +176,7 @@ export default function ProfilePage() {
     setIsEditing(!isEditing);
     // Si on annule l'édition, réinitialiser avec les données originales
     if (isEditing && user) {
-      setFormData(user);
+      setUser(user);
     }
   };
   
@@ -106,6 +231,29 @@ export default function ProfilePage() {
     }
   };
 
+  const getAvatarUrl = (avatarPath: string | undefined): string => {
+    if (!avatarPath) return '';
+    
+    // Débogage
+    console.log('Avatar path:', avatarPath);
+    
+    // Gestion des différents formats
+    if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
+      return avatarPath;
+    }
+    
+    if (avatarPath.startsWith('/')) {
+      return avatarPath;
+    }
+    
+    // Ajouter le chemin de base de votre backend
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    return `${baseUrl}/media/${avatarPath}`;
+  };
+
+  const avatarUrl = getAvatarUrl(user.avatar);
+
+
   // États de chargement
   if (isLoading) {
     return (
@@ -133,12 +281,16 @@ export default function ProfilePage() {
             className="mt-4"
           >
             Se connecter
-          </Button>
+          </Button> 
         </div>
       </div>
     );
   }
-
+  const calculateOnboardingProgress = () => {
+    if (user.onboarding_completed) return 100;
+    return Math.min(user.onboarding_step * 20, 100);
+  };
+   const onboardingProgress = calculateOnboardingProgress();
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <DashboardHeader 
@@ -166,7 +318,7 @@ export default function ProfilePage() {
             </Button>
             {isEditing && (
               <Button 
-                onClick={() => console.log('Sauvegarder', formData)}
+                onClick={() => console.log('Sauvegarder', user)}
                 className="bg-green-600 hover:bg-green-700"
               >
                 Sauvegarder
@@ -183,10 +335,10 @@ export default function ProfilePage() {
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center text-center space-y-4">
                   <Avatar className="h-32 w-32 border-4 border-white dark:border-gray-800 shadow-md">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                      {getInitials(user.name)}
-                    </AvatarFallback>
+                    <AvatarImage src={avatarUrl} alt={user.name} />
+                      <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                        {getInitials(user.name)}
+                      </AvatarFallback>
                   </Avatar>
                   
                   <div>
@@ -224,7 +376,7 @@ export default function ProfilePage() {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400">Profil complété</span>
                     <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-300">
-                      {user.phone ? '80%' : '40%'}
+                      {onboardingProgress}%
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center">
@@ -260,7 +412,7 @@ export default function ProfilePage() {
                   </CardHeader>
                   <CardContent>
                     <UserProfileForm
-                      user={isEditing ? formData : user}
+                      user={isEditing ? user : user}
                       isEditing={isEditing}
                       onInputChange={handleInputChange}
                       userType={user.role}

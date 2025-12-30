@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export interface User {
+  user: any;
   id: string;
   name: string;
   forename: string;
@@ -109,6 +110,18 @@ export interface PreferencesResponse {
   redirect: string;
 }
 
+export interface UpdateSecondaryRoleProfileRequest {
+  role: string;
+  data: Partial<AdvancedProfileRequest>; 
+}
+
+export interface UpdateSecondaryRoleProfileResponse {
+  success: boolean;
+  message: string;
+  role: string;
+  user: User;
+}
+
 
 export const api = createApi({
   baseQuery: fetchBaseQuery({ 
@@ -205,6 +218,18 @@ export const api = createApi({
       invalidatesTags: ["User"],
     }),
 
+    updateSecondaryRoleProfile: build.mutation<
+  UpdateSecondaryRoleProfileResponse,
+  UpdateSecondaryRoleProfileRequest
+>({
+  query: (payload) => ({
+    url: '/user/me/secondary-roles/',
+    method: 'PATCH',
+    body: payload,
+  }),
+  invalidatesTags: ["User"], // On invalide le cache User pour avoir les données à jour
+}),
+
     getTempData: build.query<{company_name: string; niveau_expertise: string}, void>({
       queryFn: () => ({
         data: {
@@ -220,6 +245,7 @@ export const api = createApi({
 export const { 
   useGetCurrentUserQuery,
   useUpdateUserRolesMutation,
+  useUpdateSecondaryRoleProfileMutation, 
   // useRegisterUserMutation,
   useLoginUserMutation,
   useUpdateBasicProfileMutation,

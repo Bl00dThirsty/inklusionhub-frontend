@@ -263,31 +263,31 @@ export default function DashboardPage() {
   const onboardingProgress = calculateOnboardingProgress();
   
   const getAvatarUrl = (avatarPath: string | undefined): string => {
-    if (!avatarPath) return '';
-    
-    // Débogage
-    console.log('Avatar path:', avatarPath);
-    
-    // Gestion des différents formats
-    if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
-      return avatarPath;
-    }
-    
-    if (avatarPath.startsWith('/')) {
-      return avatarPath;
-    }
-    
-    // Ajouter le chemin de base de votre backend
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    return `${baseUrl}/media/${avatarPath}`;
-  };
+  if (!avatarPath) return '';
+  
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  
+  // Extraire juste le nom du fichier
+  const filename = avatarPath.split('/').pop() || '';
+  return `${baseUrl}/avatars/${filename}`;
+};
 
   const avatarUrl = getAvatarUrl(userData.avatar);
+
+  const getInitials = (name: string) => {
+    if (!name) return '??';
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <DashboardHeader 
-        userName={`${userData.forename} ${userData.name}`}
+        userName={`${userData.name} ${getInitials(userData.forename)}.`}
         userRole={userData.role}
         userEmail={userData.email}
         userAvatar={avatarUrl}

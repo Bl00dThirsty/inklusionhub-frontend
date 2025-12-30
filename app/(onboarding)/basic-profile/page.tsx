@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Upload, Camera, Building, Languages } from 'lucide-react';
 import Image from 'next/image';
 import { useUpdateBasicProfileMutation } from '@/state/api';
+import { toast } from 'sonner'; 
 
 export default function BasicProfilePage() {
   const router = useRouter();
@@ -50,12 +51,14 @@ export default function BasicProfilePage() {
       // Vérifier la taille (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setErrors({ avatar: 'La photo ne doit pas dépasser 5MB' });
+        toast.error('La photo ne doit pas dépasser 5MB');
         return;
       }
       
       // Vérifier le type
       if (!file.type.match('image.*')) {
         setErrors({ avatar: 'Veuillez sélectionner une image valide' });
+        toast.error('Veuillez sélectionner une image valide');
         return;
       }
       

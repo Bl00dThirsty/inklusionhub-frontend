@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useGetCurrentUserQuery } from '@/state/api';
+import { useGetCurrentUserQuery, useUpdateProfileMutation, useUpdateAvatarMutation } from '@/state/api';
 import { UserProfileForm } from '../../Components/UserProfileForm';
 import DashboardHeader from '../../Components/DashboardHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../Components/ui/card';
@@ -11,6 +11,9 @@ import { Badge } from '../../Components/ui/badge';
 import { Button } from '../../Components/ui/button'
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
+import { toast } from 'sonner'; 
+import { Camera } from 'lucide-react';
+import RoleSelectionPage from '@/app/(onboarding)/role-selection/page';
 
 interface UserData {
   id: string;
@@ -43,8 +46,8 @@ interface UserData {
   Site_web?: string;//Pour employeur
   secondary_roles?: string[];
   preferences?: string[];
-  createdAt?:string;
-  updatedAt?:string;
+ date_joined?:Date;
+ updated_at?:Date;
 }
 export default function ProfilePage() { 
   const router = useRouter();
@@ -57,6 +60,13 @@ export default function ProfilePage() {
     refetch 
   } = useGetCurrentUserQuery();  
 
+  // Mutation pour update le profil
+  const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
+
+ // Mutation pour update l'avatar
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
+  const [updateAvatar, { isLoading: isUpdatingAvatar }] = useUpdateAvatarMutation();
 
   const [user, setUser] = useState<UserData>({
     id: '',
@@ -80,23 +90,19 @@ export default function ProfilePage() {
     Creneau_horaire_disponible: '',// Pour traducteur
     Tarif_horaire: 0,// Pour traducteur
     Annee_experience: 0,
-  Domaine_activity: '',//Pour employeur
-  Type_company: '',//Pour employeur
-  Adresse_company: '',//Pour employeur
-  Taille_Company: '',//Pour employeur
-  certification: '',
-  Site_web: '',//Pour employeur
-  secondary_roles: [],
-  preferences: [],
-  createdAt: '',
-  updatedAt: '',
+    Domaine_activity: '',//Pour employeur
+    Type_company: '',//Pour employeur
+    Adresse_company: '',//Pour employeur
+    Taille_Company: '',//Pour employeur
+    certification: '',
+    Site_web: '',//Pour employeur
+    secondary_roles: [],
+    preferences: [],
+    date_joined: new Date(),
+    updated_at: new Date(),
   });
   
-  // Récupérer l'utilisateur connecté via Redux RTK Query
-
-
-  
-  
+ 
   // Mettre à jour formData quand user est chargé
    useEffect(() => {
   if (apiUserData) {
@@ -160,7 +166,7 @@ export default function ProfilePage() {
   // Rediriger si erreur d'authentification
   useEffect(() => {
     if (isError) {
-      console.error('Erreur de chargement:', error);
+      toast.error('Erreur de chargement, vous êtes redirigé vers la page de connexion');
       router.push('/sign-in');
     }
   }, [isError, error, router]);
@@ -172,13 +178,173 @@ export default function ProfilePage() {
     }));
   };
   
-  const handleEditToggle = () => {
-    setIsEditing(!isEditing);
-    // Si on annule l'édition, réinitialiser avec les données originales
-    if (isEditing && user) {
-      setUser(user);
+   // Fonction pour gérer la sauvegarde
+  const handleSaveProfile = async () => {
+    try {
+      // Préparer les données de base uniquement
+      const basicProfileData = {
+        name: user.name,
+        forename: user.forename,
+        email: user.email,
+        phone: user.phone,
+        adresse: user.adresse,
+        Profession: user.Profession,
+        role: user.role,
+        secondary_roles: user.secondary_roles || [],
+      };
+
+      // Appel API
+      await updateProfile({ data: basicProfileData }).unwrap();
+      
+      // Recharger les données
+      await refetch();
+      
+      // Désactiver le mode édition
+      setIsEditing(false);
+      
+      // Afficher un message de succès
+      toast.success('Profil mis à jour avec succès!');
+      
+    } catch (error: any) {
+      console.error('Erreur lors de la mise à jour:', error);
+      
+      // Afficher l'erreur
+      toast.error(
+        error.data?.errors ? 
+        Object.values(error.data.errors).flat().join(', ') : 
+        'Erreur lors de la mise à jour du profil'
+      );
     }
   };
+
+  // Fonction pour gérer l'annulation
+  const handleCancelEdit = () => {
+    // Réinitialiser avec les données originales de l'API
+    if (apiUserData) {
+      let userData;
+      
+      if (apiUserData.user) {
+        userData = apiUserData.user;
+      } else if (apiUserData.id) {
+        userData = apiUserData;
+      }
+      
+      if (userData) {
+        setUser({
+          id: userData.id || '',
+          name: userData.name || '',
+          forename: userData.forename || '',
+          email: userData.email || '',
+          phone: userData.phone || '',
+          avatar: userData.avatar || '',
+          adresse: userData.adresse || '',
+          Profession: userData.Profession || '',
+          role: userData.role || 'malentendant',
+          onboarding_completed: userData.onboarding_completed || false,
+          onboarding_step: userData.onboarding_step || 1,
+          langue_parlee: Array.isArray(userData.langue_parlee) ? userData.langue_parlee : [],
+          level_en_LSF: userData.level_en_LSF || '',
+          company_name: userData.company_name,
+          niveau_expertise: userData.niveau_expertise,
+          niveau_perte_auditive: userData.niveau_perte_auditive,
+          status_utilisez_vous_un_appareil_auditif: userData.status_utilisez_vous_un_appareil_auditif || false,
+          Jour_disponible: userData.Jour_disponible || '',// Pour traducteur
+          Creneau_horaire_disponible: userData.Creneau_horaire_disponible || '',// Pour traducteur
+          Tarif_horaire: userData.Tarif_horaire || 0,// Pour traducteur
+          Domaine_activity: userData.Domaine_activity || '',//Pour employeur
+          Annee_experience: userData.Annee_experience || 0,
+          Type_company: userData.Type_company || '',//Pour employeur
+          Adresse_company: userData.Adresse_company || '',//Pour employeur
+          Taille_Company: userData.Taille_Company || '',//Pour employeur
+          certification: userData.certification || '',
+          Site_web: userData.Site_web || '',//Pour employeur
+          secondary_roles: Array.isArray(userData.secondary_roles) ? userData.secondary_roles : [],
+          preferences: Array.isArray(userData.preferences) ? userData.preferences : [],
+        });
+      }
+    }
+    
+    setIsEditing(false);
+  };
+
+  // Modifiez la fonction handleEditToggle
+  const handleEditToggle = () => {
+    if (!isEditing) {
+      // Activer le mode édition
+      setIsEditing(true);
+    } else {
+      // Annuler l'édition
+      handleCancelEdit();
+    }
+  };
+
+  // Fonction pour gérer la sélection d'un fichier avatar
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Vérifier la taille (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('L\'image ne doit pas dépasser 2MB');
+        return;
+      }
+      
+      // Vérifier le type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Veuillez sélectionner une image valide');
+        return;
+      }
+      
+      setAvatarFile(file);
+      
+      // Créer une preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewAvatar(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Fonction pour uploader l'avatar
+  const handleUploadAvatar = async () => {
+    if (!avatarFile) {
+      toast.error('Veuillez sélectionner une image');
+      return;
+    }
+    
+    try {
+      const formData = new FormData();
+      formData.append('avatar', avatarFile);
+      
+      const result = await updateAvatar(formData).unwrap();
+      
+      if (result.success) {
+        toast.success('Avatar mis à jour avec succès!');
+        
+        // Réinitialiser les états
+        setAvatarFile(null);
+        setPreviewAvatar(null);
+        
+        // Recharger les données utilisateur
+        await refetch();
+        
+        // Si l'URL est retournée, mettre à jour localement
+        if (result.avatar_url) {
+          setUser(prev => ({ ...prev, avatar: result.avatar_url }));
+        }
+      }
+    } catch (error: any) {
+      console.error('Erreur upload avatar:', error);
+      toast.error(error.data?.error || 'Erreur lors de l\'upload de l\'avatar');
+    }
+  };
+
+  // Fonction pour annuler la sélection d'avatar
+  const handleCancelAvatar = () => {
+    setAvatarFile(null);
+    setPreviewAvatar(null);
+  };
+
   
   // Fonction pour obtenir les initiales du nom
   const getInitials = (name: string) => {
@@ -218,10 +384,11 @@ export default function ProfilePage() {
   };
   
   // Formater la date
-  const formatDate = (dateString?: string) => {
+  const formatDate = (dateString?: string | Date) => {
     if (!dateString) return 'Non spécifié';
     try {
-      return new Date(dateString).toLocaleDateString('fr-FR', {
+      const dateObj = typeof dateString === 'string' ? new Date(dateString) : dateString;
+      return dateObj.toLocaleDateString('fr-FR', {
         day: 'numeric',
         month: 'long',
         year: 'numeric'
@@ -231,25 +398,15 @@ export default function ProfilePage() {
     }
   };
 
-  const getAvatarUrl = (avatarPath: string | undefined): string => {
-    if (!avatarPath) return '';
-    
-    // Débogage
-    console.log('Avatar path:', avatarPath);
-    
-    // Gestion des différents formats
-    if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
-      return avatarPath;
-    }
-    
-    if (avatarPath.startsWith('/')) {
-      return avatarPath;
-    }
-    
-    // Ajouter le chemin de base de votre backend
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    return `${baseUrl}/media/${avatarPath}`;
-  };
+ const getAvatarUrl = (avatarPath: string | undefined): string => {
+  if (!avatarPath) return '';
+  
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  
+  // Extraire juste le nom du fichier
+  const filename = avatarPath.split('/').pop() || '';
+  return `${baseUrl}/avatars/${filename}`;
+};
 
   const avatarUrl = getAvatarUrl(user.avatar);
 
@@ -294,10 +451,10 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <DashboardHeader 
-        userName={`${user.forename} ${user.name}`}
+        userName={`${user.name} ${getInitials(user.forename)}.`}
         userRole={user.role}
         userEmail={user.email}
-        userAvatar={user.avatar}
+        userAvatar={avatarUrl}
       />
       
       <div className="container mx-auto px-4 py-8">
@@ -318,10 +475,16 @@ export default function ProfilePage() {
             </Button>
             {isEditing && (
               <Button 
-                onClick={() => console.log('Sauvegarder', user)}
+                onClick={handleSaveProfile}
                 className="bg-green-600 hover:bg-green-700"
+                disabled={isUpdating}
               >
-                Sauvegarder
+                {isUpdating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sauvegarde...
+                  </>
+                ) : 'Sauvegarder'}
               </Button>
             )}
           </div>
@@ -334,15 +497,63 @@ export default function ProfilePage() {
             <Card className="shadow-sm dark:bg-gray-800 dark:border-gray-700">
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center text-center space-y-4">
-                  <Avatar className="h-32 w-32 border-4 border-white dark:border-gray-800 shadow-md">
-                    <AvatarImage src={avatarUrl} alt={user.name} />
-                      <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                        {getInitials(user.name)}
-                      </AvatarFallback>
-                  </Avatar>
+                  {/* Avatar avec option de changement */}
+                  <div className="relative group">
+                    <Avatar className="h-32 w-32 border-4 border-white dark:border-gray-800 shadow-md">
+                      {previewAvatar ? (
+                        <AvatarImage src={previewAvatar} alt={user.name} />
+                      ) : (
+                        <AvatarImage src={avatarUrl} alt={user.name} />
+                      )}
+                    </Avatar>
+                    
+                    {/* Overlay pour upload */}
+                    {!isEditing && (
+                      <div className="absolute inset-0 bg-black-100 bg-opacity-10 group-hover:bg-opacity-40 rounded-full flex items-center justify-center transition-all duration-300">
+                        <label htmlFor="avatar-upload" className="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <div className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg">
+                            <Camera className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                          </div>
+                          <input
+                            id="avatar-upload"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAvatarChange}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Boutons pour upload d'avatar */}
+                  {(avatarFile || previewAvatar) && (
+                    <div className="flex gap-2 animate-in fade-in">
+                      <Button
+                        onClick={handleUploadAvatar}
+                        disabled={isUpdatingAvatar}
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        {isUpdatingAvatar ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Upload...
+                          </>
+                        ) : 'Sauvegarder avatar'}
+                      </Button>
+                      <Button
+                        onClick={handleCancelAvatar}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Annuler
+                      </Button>
+                    </div>
+                  )}
                   
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{user.name}</h2>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{user.name} {user.forename}</h2>
                     <p className="text-gray-600 dark:text-gray-400">{user.email}</p>
                     
                     <Badge className={`mt-2 ${getRoleColor(user.role)}`}>
@@ -351,9 +562,9 @@ export default function ProfilePage() {
                   </div>
                   
                   <div className="w-full pt-4 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                    <p>Membre depuis le {formatDate(user.createdAt)}</p>
-                    {user.updatedAt && (
-                      <p>Dernière mise à jour : {formatDate(user.updatedAt)}</p>
+                    <p>Membre depuis le {formatDate(user.date_joined)}</p>
+                    {user.updated_at && (
+                      <p>Dernière mise à jour : {formatDate(user.updated_at)}</p>
                     )}
                   </div>
                 </div>
@@ -377,12 +588,6 @@ export default function ProfilePage() {
                     <span className="text-gray-600 dark:text-gray-400">Profil complété</span>
                     <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-300">
                       {onboardingProgress}%
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400">Abonnement</span>
-                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900 dark:text-amber-300">
-                      Gratuit
                     </Badge>
                   </div>
                 </div>

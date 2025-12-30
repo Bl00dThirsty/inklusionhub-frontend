@@ -79,16 +79,6 @@ export default function DashboardHeader({
     return baseItems;
   };
 
-  // const handleLogout = () => {
-  //   // TODO: Implémenter la déconnexion
-  //   localStorage.removeItem('userData');
-  //   const current = Number(localStorage.getItem("OnboardProgress")) || 0;
-  //     const updated = current * 0;
-
-  //     localStorage.setItem("OnboardProgress", String(updated));
-  //   router.push('/role-selection');
-  // };
-
   const handleMobileNavigation = (href: string) => {
     router.push(href);
     setShowMobileMenu(false);
@@ -170,7 +160,7 @@ export default function DashboardHeader({
                   <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-3">
                       {userAvatar ? (
-                        <Image
+                        <img
                           src={userAvatar}
                           alt="U"
                           width={40}
@@ -324,7 +314,7 @@ export default function DashboardHeader({
               >
                 <div className="relative">
                   {userAvatar ? (
-                    <Image
+                    <img
                       src={userAvatar}
                       alt={userName}
                       width={32}

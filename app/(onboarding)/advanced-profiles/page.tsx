@@ -208,6 +208,17 @@ export default function AdvancedProfilesPage() {
     }));
   };
 
+// Fonction de validation d'URL simple
+  const isValidUrl = (value: string) => {
+    try {
+      new URL(value);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+
   const saveProfile = async () => {
     if (!activeProfile) return;
     
@@ -219,6 +230,13 @@ export default function AdvancedProfilesPage() {
       
       // Préparer les données selon le profil actif
       if (activeProfile === 'employer') {
+        if (employerProfile.Site_web && !isValidUrl(employerProfile.Site_web)) {
+          setErrors({
+          Site_web: "Veuillez entrer une adresse web valide (ex: https://example.com)"
+        });
+          setLoading(false);
+          return; 
+      }
         profileData = {
           ...employerProfile,
           // Validation des champs obligatoires
@@ -401,6 +419,11 @@ export default function AdvancedProfilesPage() {
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             placeholder="https://example.com"
           />
+          {errors.Site_web && (
+            <p className="text-red-600 text-sm mt-1">
+              {errors.Site_web}
+            </p>
+      )}
         </div>
       </div>
     </div>

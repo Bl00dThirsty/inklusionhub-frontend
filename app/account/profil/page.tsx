@@ -3,19 +3,22 @@
 // Importations des dépendances React et Next.js
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useGetCurrentUserQuery, useUpdateSecondaryRoleProfileMutation } from '@/state/api';
-
-// Importation des composants UI personnalisés
+import { useGetCurrentUserQuery, useUpdateProfileMutation, useUpdateAvatarMutation, useUpdateSecondaryRoleProfileMutation } from '@/state/api';
 import { UserProfileForm } from '../../Components/UserProfileForm';
 import DashboardHeader from '../../Components/DashboardHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../Components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../Components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '../../Components/ui/avatar';
 import { Badge } from '../../Components/ui/badge';
-import { Button } from '../../Components/ui/button';
-import { Loader2, X, Calendar } from 'lucide-react';
 import { SecondaryRolesDisplay } from './SecondaryRoles';
 import { UserRole } from './SecondaryRoles';
+import { Button } from '../../Components/ui/button'
+import { Loader2, X } from 'lucide-react';
+import Image from 'next/image';
+import { toast } from 'sonner'; 
+import { Camera } from 'lucide-react';
+import RoleSelectionPage from '@/app/(onboarding)/role-selection/page';
+
 
 // Interface définissant la structure des données utilisateur
 interface UserData {
@@ -56,8 +59,8 @@ interface UserData {
   Site_web?: string;
   secondary_roles?: string[];
   preferences?: string[];
-  createdAt?: string;
-  updatedAt?: string;
+ date_joined?:Date;
+ updated_at?:Date;
 }
 
 /**
@@ -83,7 +86,14 @@ export default function ProfilePage() {
     refetch 
   } = useGetCurrentUserQuery();  
 
-  // État local pour les données utilisateur en cours d'édition
+  // Mutation pour update le profil
+  const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
+
+ // Mutation pour update l'avatar
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
+  const [updateAvatar, { isLoading: isUpdatingAvatar }] = useUpdateAvatarMutation();
+  // Mutation pour update les rôles secondaires
   const [user, setUser] = useState<UserData>({
     id: '',
     name: '',
@@ -106,37 +116,79 @@ export default function ProfilePage() {
     Creneau_horaire_disponible: { start: '', end: '' },
     Tarif_horaire: 0,
     Annee_experience: 0,
-    Domaine_activity: '',
-    Type_company: '',
-    Adresse_company: '',
-    Taille_Company: '',
+    Domaine_activity: '',//Pour employeur
+    Type_company: '',//Pour employeur
+    Adresse_company: '',//Pour employeur
+    Taille_Company: '',//Pour employeur
     certification: '',
-    Site_web: '',
+    Site_web: '',//Pour employeur
     secondary_roles: [],
     preferences: [],
-    createdAt: '',
-    updatedAt: '',
+    date_joined: new Date(),
+    updated_at: new Date(),
   });
-
-  // Fonction utilitaire pour sécuriser le rôle de l'utilisateur
-  const parseUserRole = (role: string | undefined): UserRole => {
-    console.log('parseUserRole appelé avec:', role);
+  
+ 
+  // Mettre à jour formData quand user est chargé
+// Mettre à jour formData quand user est chargé
+   useEffect(() => {
+  if (apiUserData) {
+    // console.log('=== DEBUG API RESPONSE ===');
+    // console.log('Type:', typeof apiUserData);
+    // console.log('Full response:', apiUserData);
+    // console.log('Has user property?', 'user' in apiUserData);
+    // console.log('Keys:', Object.keys(apiUserData));
+    // console.log('Role from API:', apiUserData.role || apiUserData.user?.role);
+    // console.log('==========================');
     
-    if (!role) {
-      console.warn('parseUserRole: rôle non défini, retourne malentendant par défaut');
-      return 'malentendant';
+    // Vérifiez la structure exacte
+    let user;
+    
+    // Essayez différentes structures possibles
+    if (apiUserData.user) {
+      // Structure: { success: true, user: {...} }
+      user = apiUserData.user;
+    } else if (apiUserData.id) {
+      // Structure: user directement
+      user = apiUserData;
+    } else {
+      console.error('Structure API inattendue:', apiUserData);
+      return;
     }
     
-    const validRoles: UserRole[] = ['apprenant','entendant','malentendant','employeur','traducteur','admin'];
-    const normalizedRole = role.toLowerCase().trim() as UserRole;
-    
-    if (validRoles.includes(normalizedRole)) {
-      return normalizedRole;
-    }
-    
-    console.warn(`parseUserRole: rôle "${role}" non valide, retourne malentendant par défaut`);
-    return 'malentendant';
-  };
+    setUser({
+      id: user.id || '',
+      name: user.name || '',
+      forename: user.forename || '',
+      email: user.email || '',
+      role: user.role || 'malentendant',
+      phone: user.phone || '',
+      avatar: user.avatar || '',
+      adresse: user.adresse || '',
+      Profession: user.Profession || '',
+      onboarding_completed: user.onboarding_completed || false,
+      onboarding_step: user.onboarding_step || 1,
+      langue_parlee: Array.isArray(user.langue_parlee) ? user.langue_parlee : [],
+      level_en_LSF: user.level_en_LSF || '',
+      company_name: user.company_name,
+      niveau_expertise: user.niveau_expertise,
+      niveau_perte_auditive: user.niveau_perte_auditive,
+      status_utilisez_vous_un_appareil_auditif: user.status_utilisez_vous_un_appareil_auditif || false,
+      Jour_disponible: user.Jour_disponible || '',// Pour traducteur
+      Creneau_horaire_disponible: user.Creneau_horaire_disponible || '',// Pour traducteur
+      Tarif_horaire: user.Tarif_horaire || 0,// Pour traducteur
+      Domaine_activity: user.Domaine_activity || '',//Pour employeur
+      Annee_experience: user.Annee_experience || 0,
+      Type_company: user.Type_company || '',//Pour employeur
+      Adresse_company: user.Adresse_company || '',//Pour employeur
+      Taille_Company: user.Taille_Company || '',//Pour employeur
+      certification: user.certification || '',
+      Site_web: user.Site_web || '',//Pour employeur
+      secondary_roles: Array.isArray(user.secondary_roles) ? user.secondary_roles : [],
+      preferences: Array.isArray(user.preferences) ? user.preferences : [],
+    });
+  }
+}, [apiUserData]);
 
   // Référence pour garder le rôle pendant la sauvegarde
   const selectedSecondaryRoleRef = useRef<UserRole | null>(null);
@@ -145,138 +197,138 @@ export default function ProfilePage() {
    * Effet pour synchroniser les données de l'API avec l'état local
    * Se déclenche lorsque les données de l'API changent
    */
-  useEffect(() => {
-    if (apiUserData) {
-      console.log('Données API reçues:', apiUserData);
+  // useEffect(() => {
+  //   if (apiUserData) {
+  //     console.log('Données API reçues:', apiUserData);
       
-      let userData;
+  //     let userData;
       
-      if (apiUserData.user) {
-        userData = apiUserData.user;
-      } else if (apiUserData.id) {
-        userData = apiUserData;
-      } else {
-        console.error('Structure API inattendue:', apiUserData);
-        return;
-      }
+  //     if (apiUserData.user) {
+  //       userData = apiUserData.user;
+  //     } else if (apiUserData.id) {
+  //       userData = apiUserData;
+  //     } else {
+  //       console.error('Structure API inattendue:', apiUserData);
+  //       return;
+  //     }
       
-      console.log('Données utilisateur extraites:', {
-        id: userData.id,
-        name: userData.name,
-        forename: userData.forename,
-        email: userData.email,
-        phone: userData.phone,
-        adresse: userData.adresse,
-        role: userData.role,
-        secondary_roles: userData.secondary_roles,
-        langue_parlee: userData.langue_parlee,
-        preference_apprentissage: userData.preference_apprentissage,
-        level_en_LSF: userData.level_en_LSF,
-        Profession: userData.Profession,
-        company_name: userData.company_name,
-        certification: userData.certification,
-        niveau_perte_auditive: userData.niveau_perte_auditive,
-        status_utilisez_vous_un_appareil_auditif: userData.status_utilisez_vous_un_appareil_auditif,
-      });
+  //     console.log('Données utilisateur extraites:', {
+  //       id: userData.id,
+  //       name: userData.name,
+  //       forename: userData.forename,
+  //       email: userData.email,
+  //       phone: userData.phone,
+  //       adresse: userData.adresse,
+  //       role: userData.role,
+  //       secondary_roles: userData.secondary_roles,
+  //       langue_parlee: userData.langue_parlee,
+  //       preference_apprentissage: userData.preference_apprentissage,
+  //       level_en_LSF: userData.level_en_LSF,
+  //       Profession: userData.Profession,
+  //       company_name: userData.company_name,
+  //       certification: userData.certification,
+  //       niveau_perte_auditive: userData.niveau_perte_auditive,
+  //       status_utilisez_vous_un_appareil_auditif: userData.status_utilisez_vous_un_appareil_auditif,
+  //     });
       
-      if (userData) {
-        console.log('=== CHAMPS IMPORTANTS POUR MODALS ===');
-        console.log('Competence:', userData.Competence, 'type:', typeof userData.Competence);
-        console.log('Jour_disponible:', userData.Jour_disponible, 'type:', typeof userData.Jour_disponible);
+  //     if (userData) {
+  //       console.log('=== CHAMPS IMPORTANTS POUR MODALS ===');
+  //       console.log('Competence:', userData.Competence, 'type:', typeof userData.Competence);
+  //       console.log('Jour_disponible:', userData.Jour_disponible, 'type:', typeof userData.Jour_disponible);
         
-        console.log('=== TEST DE SÉRIALISATION ===');
-        console.log('Competence is empty string?', userData.Competence === '');
-        console.log('Competence stringified:', JSON.stringify(userData.Competence));
-        console.log('Jour_disponible is empty string?', userData.Jour_disponible === '');
-      }
+  //       console.log('=== TEST DE SÉRIALISATION ===');
+  //       console.log('Competence is empty string?', userData.Competence === '');
+  //       console.log('Competence stringified:', JSON.stringify(userData.Competence));
+  //       console.log('Jour_disponible is empty string?', userData.Jour_disponible === '');
+  //     }
 
-      // Fonction pour transformer les chaînes vides en tableaux vides
-      const normalizeField = (value: any): any[] => {
-        console.log('normalizeField input:', value, 'type:', typeof value);
+  //     // Fonction pour transformer les chaînes vides en tableaux vides
+  //     const normalizeField = (value: any): any[] => {
+  //       console.log('normalizeField input:', value, 'type:', typeof value);
         
-        // Si c'est vide
-        if (value === '' || value === '""' || value === null || value === undefined) {
-          console.log('normalizeField: returning empty array for empty value');
-          return [];
-        }
+  //       // Si c'est vide
+  //       if (value === '' || value === '""' || value === null || value === undefined) {
+  //         console.log('normalizeField: returning empty array for empty value');
+  //         return [];
+  //       }
         
-        // Si c'est déjà un tableau
-        if (Array.isArray(value)) {
-          console.log('normalizeField: already array, returning as is');
-          return value;
-        }
+  //       // Si c'est déjà un tableau
+  //       if (Array.isArray(value)) {
+  //         console.log('normalizeField: already array, returning as is');
+  //         return value;
+  //       }
         
-        // Si c'est une chaîne
-        if (typeof value === 'string') {
-          try {
-            // Essayer de parser comme JSON
-            const parsed = JSON.parse(value);
-            console.log('normalizeField: parsed JSON:', parsed);
-            if (Array.isArray(parsed)) {
-              return parsed;
-            }
-            return [];
-          } catch (e) {
-            console.log('normalizeField: not valid JSON, returning empty array');
-            return [];
-          }
-        }
+  //       // Si c'est une chaîne
+  //       if (typeof value === 'string') {
+  //         try {
+  //           // Essayer de parser comme JSON
+  //           const parsed = JSON.parse(value);
+  //           console.log('normalizeField: parsed JSON:', parsed);
+  //           if (Array.isArray(parsed)) {
+  //             return parsed;
+  //           }
+  //           return [];
+  //         } catch (e) {
+  //           console.log('normalizeField: not valid JSON, returning empty array');
+  //           return [];
+  //         }
+  //       }
         
-        console.log('normalizeField: default case, returning empty array');
-        return [];
-      };
+  //       console.log('normalizeField: default case, returning empty array');
+  //       return [];
+  //     };
 
-      // Tester la fonction avec vos données
-      const testCompetence = normalizeField(userData.Competence);
-      const testJourDisponible = normalizeField(userData.Jour_disponible);
-      console.log('=== RÉSULTATS NORMALISÉS ===');
-      console.log('Competence normalized:', testCompetence);
-      console.log('Jour_disponible normalized:', testJourDisponible);
+  //     // Tester la fonction avec vos données
+  //     const testCompetence = normalizeField(userData.Competence);
+  //     const testJourDisponible = normalizeField(userData.Jour_disponible);
+  //     console.log('=== RÉSULTATS NORMALISÉS ===');
+  //     console.log('Competence normalized:', testCompetence);
+  //     console.log('Jour_disponible normalized:', testJourDisponible);
 
-      // Mettre à jour l'état local avec les données formatées
-      setUser({
-        id: userData.id || '',
-        name: userData.name || '',
-        forename: userData.forename || '',
-        email: userData.email || '',
-        role: parseUserRole(userData.role),
-        phone: userData.phone || '',
-        avatar: userData.avatar || '',
-        adresse: userData.adresse || '',
-        Profession: userData.Profession || '',
-        onboarding_completed: userData.onboarding_completed || false,
-        onboarding_step: userData.onboarding_step || 1,
-        preference_apprentissage: normalizeField(userData.preference_apprentissage),
-        langue_parlee: normalizeField(userData.langue_parlee),
-        level_en_LSF: userData.level_en_LSF || '',
-        company_name: userData.company_name || '',
-        niveau_expertise: userData.niveau_expertise || '',
-        niveau_perte_auditive: userData.niveau_perte_auditive || '',
-        status_utilisez_vous_un_appareil_auditif: userData.status_utilisez_vous_un_appareil_auditif || false,
-        Jour_disponible: normalizeField(userData.Jour_disponible),
-        Creneau_horaire_disponible: userData.Creneau_horaire_disponible || { start: '', end: '' },
-        Tarif_horaire: userData.Tarif_horaire || 0,
-        Domaine_activity: userData.Domaine_activity || '',
-        Annee_experience: userData.Annee_experience || 0,
-        Type_company: userData.Type_company || '',
-        Adresse_company: userData.Adresse_company || '',
-        Taille_Company: userData.Taille_Company || '',
-        certification: userData.certification || '',
-        Site_web: userData.Site_web || '',
-        secondary_roles: normalizeField(userData.secondary_roles),
-        preferences: Array.isArray(userData.preferences) ? userData.preferences : [],
-        createdAt: userData.createdAt || '',
-        updatedAt: userData.updatedAt || '',
-        Competence: normalizeField(userData.Competence),
-      });
-    }
+  //     // Mettre à jour l'état local avec les données formatées
+  //     setUser({
+  //       id: userData.id || '',
+  //       name: userData.name || '',
+  //       forename: userData.forename || '',
+  //       email: userData.email || '',
+  //       role: parseUserRole(userData.role),
+  //       phone: userData.phone || '',
+  //       avatar: userData.avatar || '',
+  //       adresse: userData.adresse || '',
+  //       Profession: userData.Profession || '',
+  //       onboarding_completed: userData.onboarding_completed || false,
+  //       onboarding_step: userData.onboarding_step || 1,
+  //       preference_apprentissage: normalizeField(userData.preference_apprentissage),
+  //       langue_parlee: normalizeField(userData.langue_parlee),
+  //       level_en_LSF: userData.level_en_LSF || '',
+  //       company_name: userData.company_name || '',
+  //       niveau_expertise: userData.niveau_expertise || '',
+  //       niveau_perte_auditive: userData.niveau_perte_auditive || '',
+  //       status_utilisez_vous_un_appareil_auditif: userData.status_utilisez_vous_un_appareil_auditif || false,
+  //       Jour_disponible: normalizeField(userData.Jour_disponible),
+  //       Creneau_horaire_disponible: userData.Creneau_horaire_disponible || { start: '', end: '' },
+  //       Tarif_horaire: userData.Tarif_horaire || 0,
+  //       Domaine_activity: userData.Domaine_activity || '',
+  //       Annee_experience: userData.Annee_experience || 0,
+  //       Type_company: userData.Type_company || '',
+  //       Adresse_company: userData.Adresse_company || '',
+  //       Taille_Company: userData.Taille_Company || '',
+  //       certification: userData.certification || '',
+  //       Site_web: userData.Site_web || '',
+  //       secondary_roles: normalizeField(userData.secondary_roles),
+  //       preferences: Array.isArray(userData.preferences) ? userData.preferences : [],
+  //       createdAt: userData.createdAt || '',
+  //       updatedAt: userData.updatedAt || '',
+  //       Competence: normalizeField(userData.Competence),
+  //     });
+  //   }
   /**
    * Effet pour rediriger en cas d'erreur d'authentification
    * Redirige vers la page de connexion si l'utilisateur n'est pas authentifié
    */
   useEffect(() => {
     if (isError) {
-      console.error('Erreur de chargement du profil:', error);
+      toast.error('Erreur de chargement, vous êtes redirigé vers la page de connexion');
       router.push('/sign-in');
     }
   }, [isError, error, router]);
@@ -293,64 +345,204 @@ export default function ProfilePage() {
     }));
   };
   
+
   /**
    * Bascule entre le mode édition et le mode visualisation
    * Réinitialise les données en cas d'annulation
    */
-  const handleEditToggle = () => {
-    if (isEditing) {
-      // Annuler l'édition et recharger les données originales
-      if (apiUserData) {
-        const userData = apiUserData.user || apiUserData;
-        setUser(prev => ({ 
-          ...prev, 
+  // const handleEditToggle = () => {
+  //   if (isEditing) {
+  //     // Annuler l'édition et recharger les données originales
+  //     if (apiUserData) {
+  //       const userData = apiUserData.user || apiUserData;
+  //       setUser(prev => ({ 
+  //         ...prev, 
+  //         name: userData.name || '',
+  //         forename: userData.forename || '',
+  //         email: userData.email || '',
+  //         phone: userData.phone || '',
+  //         adresse: userData.adresse || '',
+  //         Profession: userData.Profession || '',
+  //       }));
+  //     }
+  //   }
+  //   setIsEditing(!isEditing);
+  //   setSaveError(null);
+  //   setSaveSuccess(false);
+  // };
+
+   // Fonction pour gérer la sauvegarde
+  const handleSaveProfile = async () => {
+    try {
+      // Préparer les données de base uniquement
+      const basicProfileData = {
+        name: user.name,
+        forename: user.forename,
+        email: user.email,
+        phone: user.phone,
+        adresse: user.adresse,
+        Profession: user.Profession,
+        role: user.role,
+        secondary_roles: user.secondary_roles || [],
+      };
+
+      // Appel API
+      await updateProfile({ data: basicProfileData }).unwrap();
+      
+      // Recharger les données
+      await refetch();
+      
+      // Désactiver le mode édition
+      setIsEditing(false);
+      
+      // Afficher un message de succès
+      toast.success('Profil mis à jour avec succès!');
+      
+    } catch (error: any) {
+      console.error('Erreur lors de la mise à jour:', error);
+      
+      // Afficher l'erreur
+      toast.error(
+        error.data?.errors ? 
+        Object.values(error.data.errors).flat().join(', ') : 
+        'Erreur lors de la mise à jour du profil'
+      );
+    }
+  };
+
+  // Fonction pour gérer l'annulation
+  const handleCancelEdit = () => {
+    // Réinitialiser avec les données originales de l'API
+    if (apiUserData) {
+      let userData;
+      
+      if (apiUserData.user) {
+        userData = apiUserData.user;
+      } else if (apiUserData.id) {
+        userData = apiUserData;
+      }
+      
+      if (userData) {
+        setUser({
+          id: userData.id || '',
           name: userData.name || '',
           forename: userData.forename || '',
           email: userData.email || '',
           phone: userData.phone || '',
+          avatar: userData.avatar || '',
           adresse: userData.adresse || '',
           Profession: userData.Profession || '',
-        }));
+          role: userData.role || 'malentendant',
+          onboarding_completed: userData.onboarding_completed || false,
+          onboarding_step: userData.onboarding_step || 1,
+          langue_parlee: Array.isArray(userData.langue_parlee) ? userData.langue_parlee : [],
+          level_en_LSF: userData.level_en_LSF || '',
+          company_name: userData.company_name,
+          niveau_expertise: userData.niveau_expertise,
+          niveau_perte_auditive: userData.niveau_perte_auditive,
+          status_utilisez_vous_un_appareil_auditif: userData.status_utilisez_vous_un_appareil_auditif || false,
+          Jour_disponible: userData.Jour_disponible || '',// Pour traducteur
+          Creneau_horaire_disponible: userData.Creneau_horaire_disponible || '',// Pour traducteur
+          Tarif_horaire: userData.Tarif_horaire || 0,// Pour traducteur
+          Domaine_activity: userData.Domaine_activity || '',//Pour employeur
+          Annee_experience: userData.Annee_experience || 0,
+          Type_company: userData.Type_company || '',//Pour employeur
+          Adresse_company: userData.Adresse_company || '',//Pour employeur
+          Taille_Company: userData.Taille_Company || '',//Pour employeur
+          certification: userData.certification || '',
+          Site_web: userData.Site_web || '',//Pour employeur
+          secondary_roles: Array.isArray(userData.secondary_roles) ? userData.secondary_roles : [],
+          preferences: Array.isArray(userData.preferences) ? userData.preferences : [],
+        });
       }
     }
-    setIsEditing(!isEditing);
-    setSaveError(null);
-    setSaveSuccess(false);
+    
+    setIsEditing(false);
   };
 
-   /**
-   * Sauvegarde les modifications du profil
-   * Envoie les données mises à jour à l'API
-   */
-  const handleSaveProfile = async () => {
-    if (!user) return;
-    
-    setIsSaving(true);
-    setSaveError(null);
-    setSaveSuccess(false);
-    
-    try {
-      console.log('Envoi des données pour sauvegarde:', user);
-      
-      // Simulation d'un appel API (à remplacer par votre logique réelle)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSaveSuccess(true);
-      setIsEditing(false);
-      
-      // Recharger les données fraîches depuis l'API
-      refetch();
-      
-      // Cacher le message de succès après 3 secondes
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
-      setSaveError('Échec de la sauvegarde. Veuillez vérifier vos données et réessayer.');
-    } finally {
-      setIsSaving(false);
+  // Modifiez la fonction handleEditToggle
+  const handleEditToggle = () => {
+    if (!isEditing) {
+      // Activer le mode édition
+      setIsEditing(true);
+    } else {
+      // Annuler l'édition
+      handleCancelEdit();
     }
   };
-  
+
+  // Fonction pour gérer la sélection d'un fichier avatar
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Vérifier la taille (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('L\'image ne doit pas dépasser 2MB');
+        return;
+      }
+      
+      // Vérifier le type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Veuillez sélectionner une image valide');
+        return;
+      }
+      
+      setAvatarFile(file);
+      
+      // Créer une preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewAvatar(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Fonction pour uploader l'avatar
+  const handleUploadAvatar = async () => {
+    if (!avatarFile) {
+      toast.error('Veuillez sélectionner une image');
+      return;
+    }
+    
+    try {
+      const formData = new FormData();
+      formData.append('avatar', avatarFile);
+      
+      const result = await updateAvatar(formData).unwrap();
+      
+      if (result.success) {
+        toast.success('Avatar mis à jour avec succès!');
+        
+        // Réinitialiser les états
+        setAvatarFile(null);
+        setPreviewAvatar(null);
+        
+        // Recharger les données utilisateur
+        await refetch();
+        
+        // Si l'URL est retournée, mettre à jour localement
+        if (result.avatar_url) {
+          setUser(prev => ({ ...prev, avatar: result.avatar_url }));
+        }
+      }
+    } catch (error: any) {
+      console.error('Erreur upload avatar:', error);
+      toast.error(error.data?.error || 'Erreur lors de l\'upload de l\'avatar');
+    }
+  };
+
+  // Fonction pour annuler la sélection d'avatar
+  const handleCancelAvatar = () => {
+    setAvatarFile(null);
+    setPreviewAvatar(null);
+  };
+
+   // Fonction utilitaire pour sécuriser le rôle de l'utilisateur
+const parseUserRole = (role: string | undefined): UserRole => {
+  const validRoles: UserRole[] = ['apprenant','entendant','malentendant','employeur','traducteur','admin'];
+  return role && validRoles.includes(role as UserRole) ? (role as UserRole) : 'malentendant';
+};
   /**
    * Génère les initiales à partir du prénom et du nom
    * Utilise useMemo pour éviter les recalculs inutiles
@@ -600,24 +792,6 @@ export default function ProfilePage() {
 //   };
   
 
-  // Formater la date
-  const formatDate = (dateString?: string | Date) => {
-
-  const handleAvailabilityChange = (
-    days: string[],
-    startTime: string,
-    endTime: string
-  ) => {
-    setModalData((prev: any) => ({
-      ...prev,
-      Jour_disponible: days || [],
-      Creneau_horaire_disponible: {
-        start: startTime || "",
-        end: endTime || "",
-      },
-    }));
-  };
-
   // Effet pour initialiser modalData quand un rôle est sélectionné
   useEffect(() => {
     if (selectedSecondaryRole && isRoleDialogOpen) {
@@ -768,46 +942,46 @@ export default function ProfilePage() {
    * @param dateString - Date au format ISO string
    * @returns Date formatée en français
    */
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Non spécifié';
-    try {
-      return new Date(dateString).toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      console.error('Erreur de formatage de date:', error);
-      return 'Date invalide';
-    }
+  const formatDate = (date?: string | Date) => {
+  if (!date) return "Non renseigné";
+
+  const d = typeof date === "string" ? new Date(date) : date;
+
+  return d.toLocaleDateString("fr-FR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
+
+  const handleAvailabilityChange = (
+    days: string[],
+    startTime: string,
+    endTime: string
+  ) => {
+    setModalData((prev: any) => ({
+      ...prev,
+      Jour_disponible: days || [],
+      Creneau_horaire_disponible: {
+        start: startTime || "",
+        end: endTime || "",
+      },
+    }));
   };
+
+ const getAvatarUrl = (avatarPath: string | undefined): string => {
+  if (!avatarPath) return '';
   
-  /**
-   * Génère l'URL complète de l'avatar
-   * Gère différents formats d'URL (absolues, relatives, stockage local)
-   */
-  const getAvatarUrl = (avatarPath: string | undefined): string | undefined => {
-    if (!avatarPath || avatarPath.trim() === '') return undefined;
-    
-    // Si déjà une URL complète
-    if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
-      return avatarPath;
-    }
-    
-    // Si chemin relatif commençant par /
-    if (avatarPath.startsWith('/')) {
-      return avatarPath;
-    }
-    
-    // Ajouter le chemin de base de l'API
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    return `${baseUrl}/media/${avatarPath}`;
-  };
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   
-  // URL d'avatar calculée
-  const avatarUrl = getAvatarUrl(user.avatar);
+  // Extraire juste le nom du fichier
+  const filename = avatarPath.split('/').pop() || '';
+  return `${baseUrl}/avatars/${filename}`;
+};
+
+
+const avatarUrl = getAvatarUrl(user.avatar);
   
   /**
    * Calcule le pourcentage de complétion du profil
@@ -906,10 +1080,10 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* En-tête du tableau de bord avec informations utilisateur */}
       <DashboardHeader 
-        userName={`${user.forename} ${user.name}`}
+        userName={`${user.name} ${getInitials(user.forename)}.`}
         userRole={user.role}
         userEmail={user.email}
-        userAvatar={user.avatar}
+        userAvatar={avatarUrl}
       />
       
       <div className="container mx-auto px-4 py-8">
@@ -929,6 +1103,7 @@ export default function ProfilePage() {
               <div className="mb-2 p-2 bg-green-100 text-green-700 rounded-md text-sm dark:bg-green-900 dark:text-green-300">
                 Profil mis à jour avec succès
               </div>
+
             )}
             
             {saveError && (
@@ -972,19 +1147,65 @@ export default function ProfilePage() {
             <Card className="shadow-sm dark:bg-gray-800 dark:border-gray-700">
               <CardContent className="pt-6">
                 <div className="flex flex-col items-center text-center space-y-4">
-                  {/* Avatar utilisateur avec fallback aux initiales */}
-                  <Avatar className="h-32 w-32 border-4 border-white dark:border-gray-800 shadow-md">
-                    <AvatarImage src={avatarUrl} alt={`${user.forename} ${user.name}`} />
-                    <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
+                  {/* Avatar avec option de changement */}
+                  <div className="relative group">
+                    <Avatar className="h-32 w-32 border-4 border-white dark:border-gray-800 shadow-md">
+                      {previewAvatar ? (
+                        <AvatarImage src={previewAvatar} alt={user.name} />
+                      ) : (
+                        <AvatarImage src={avatarUrl} alt={user.name} />
+                      )}
+                    </Avatar>
+                    
+                    {/* Overlay pour upload */}
+                    {!isEditing && (
+                      <div className="absolute inset-0 bg-black-100 bg-opacity-10 group-hover:bg-opacity-40 rounded-full flex items-center justify-center transition-all duration-300">
+                        <label htmlFor="avatar-upload" className="cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <div className="bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg">
+                            <Camera className="h-6 w-6 text-gray-700 dark:text-gray-300" />
+                          </div>
+                          <input
+                            id="avatar-upload"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAvatarChange}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Boutons pour upload d'avatar */}
+                  {(avatarFile || previewAvatar) && (
+                    <div className="flex gap-2 animate-in fade-in">
+                      <Button
+                        onClick={handleUploadAvatar}
+                        disabled={isUpdatingAvatar}
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        {isUpdatingAvatar ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Upload...
+                          </>
+                        ) : 'Sauvegarder avatar'}
+                      </Button>
+                      <Button
+                        onClick={handleCancelAvatar}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Annuler
+                      </Button>
+                    </div>
+                  )}
                   
                   {/* Nom et email */}
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                      {user.forename} {user.name}
-                    </h2>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{user.name} {user.forename}</h2>
+
                     <p className="text-gray-600 dark:text-gray-400">{user.email}</p>
                     
                     {/* Badge du rôle principal */}
@@ -995,9 +1216,9 @@ export default function ProfilePage() {
                   
                   {/* Informations de date */}
                   <div className="w-full pt-4 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                    <p>Membre depuis le {formatDate(user.createdAt)}</p>
-                    {user.updatedAt && (
-                      <p>Dernière mise à jour : {formatDate(user.updatedAt)}</p>
+                    <p>Membre depuis le {formatDate(user.date_joined)}</p>
+                    {user.updated_at && (
+                      <p>Dernière mise à jour : {formatDate(user.updated_at)}</p>
                     )}
                   </div>
                 </div>
@@ -1024,14 +1245,6 @@ export default function ProfilePage() {
                     <span className="text-gray-600 dark:text-gray-400">Profil complété</span>
                     <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900 dark:text-blue-300">
                       {onboardingProgress}%
-                    </Badge>
-                  </div>
-                  
-                  {/* Statut d'abonnement */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600 dark:text-gray-400">Abonnement</span>
-                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900 dark:text-amber-300">
-                      Gratuit
                     </Badge>
                   </div>
                 </div>

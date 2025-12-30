@@ -110,6 +110,12 @@ export interface PreferencesResponse {
   redirect: string;
 }
 
+export interface UpdateAvatarResponse {
+  success: boolean;
+  message: string;
+  avatar_url?: string;
+}
+
 
 export interface UpdateSecondaryRoleProfileRequest {
   role: string;

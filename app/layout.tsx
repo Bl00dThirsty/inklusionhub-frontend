@@ -4,6 +4,8 @@ import { ThemeProvider } from "../app/Components/providers/ThemeProvider";
 import "./globals.css";
 import DashboardHeader from '../app/Components/DashboardHeader';
 import { Providers } from './providers';
+import { Toaster } from 'sonner';
+
 
 interface UserData {
   name: string;
@@ -46,6 +48,7 @@ export default function RootLayout({
       >
         <Providers>
             {children}
+            <Toaster position="top-right" />
         </Providers>
       </ThemeProvider>
       </body>

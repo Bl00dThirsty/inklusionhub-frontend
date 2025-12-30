@@ -10,9 +10,9 @@ export interface User {
   avatar?: string;
   adresse?: string;
   Profession?: string;
-  createdAt: string;
-  updatedAt: string;
-  
+  date_joined: Date;
+  updated_at: Date;
+
   // Champs spécifiques selon le rôle
   niveau_perte_auditive?: string;// Pour Malentendant
   status_utilisez_vous_un_appareil_auditif?: Boolean;// Pour Malentendant
@@ -107,6 +107,12 @@ export interface PreferencesResponse {
   message: string;
   user: User;
   redirect: string;
+}
+
+export interface UpdateAvatarResponse {
+  success: boolean;
+  message: string;
+  avatar_url?: string;
 }
 
 
@@ -213,6 +219,25 @@ export const api = createApi({
         }
       }),
     }),
+    // Endpoint pour update le profile d'un utilisateur connecté
+    updateProfile: build.mutation<User, {data: Partial<User>}>({
+      query: (data) => ({
+        url: '/user/update/',
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ["User"],
+    }),
+
+    updateAvatar: build.mutation<UpdateAvatarResponse, FormData>({
+      query: (formData) => ({
+        url: '/user/update-avatar/',
+        method: 'PUT',
+        body: formData,
+      }),
+      invalidatesTags: ["User"],
+    }),
+
   }),
 });
 
@@ -227,4 +252,6 @@ export const {
   useUpdatePreferencesMutation,
   useCompleteOnboardingMutation,
   useGetTempDataQuery,
+  useUpdateProfileMutation,
+  useUpdateAvatarMutation,
 } = api;

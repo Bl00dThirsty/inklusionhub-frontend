@@ -500,30 +500,30 @@ const parseUserRole = (role: string | undefined): UserRole => {
   }
 };
 
-const handleSaveSecondaryRole = async () => {
-    if (!selectedSecondaryRole) return;
-    try {
-      const response = await updateSecondaryRoleProfile({
-        role: selectedSecondaryRole,
-        data: getSecondaryRoleData(selectedSecondaryRole)
-      }).unwrap();
+// const handleSaveSecondaryRole = async () => {
+//     if (!selectedSecondaryRole) return;
+//     try {
+//       const response = await updateSecondaryRoleProfile({
+//         role: selectedSecondaryRole,
+//         data: getSecondaryRoleData(selectedSecondaryRole)
+//       }).unwrap();
 
-      console.log("Profil secondaire mis à jour :", response.user);
-      toast.success('Profil secondaire mis à jour avec succès!');
-      // Mise à jour locale des rôles secondaires si besoin
-      setUser(prev => ({
-        ...prev,
-        secondary_roles: prev.secondary_roles?.includes(selectedSecondaryRole)
-          ? prev.secondary_roles
-          : [...(prev.secondary_roles || []), selectedSecondaryRole]
-      }));
+//       console.log("Profil secondaire mis à jour :", response.user);
+//       toast.success('Profil secondaire mis à jour avec succès!');
+//       // Mise à jour locale des rôles secondaires si besoin
+//       setUser(prev => ({
+//         ...prev,
+//         secondary_roles: prev.secondary_roles?.includes(selectedSecondaryRole)
+//           ? prev.secondary_roles
+//           : [...(prev.secondary_roles || []), selectedSecondaryRole]
+//       }));
 
-      setIsEditingSecondaryRole(false);
-      setIsRoleDialogOpen(false);
-    } catch (err: any) {
-      console.error("Erreur lors de la sauvegarde :", err?.data?.message || err?.message || err);
-    }
-  };
+//       setIsEditingSecondaryRole(false);
+//       setIsRoleDialogOpen(false);
+//     } catch (err: any) {
+//       console.error("Erreur lors de la sauvegarde :", err?.data?.message || err?.message || err);
+//     }
+//   };
   
 
   // Formater la date

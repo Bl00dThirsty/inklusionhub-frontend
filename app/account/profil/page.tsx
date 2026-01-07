@@ -28,7 +28,7 @@ interface UserData {
   name: string;
   forename: string;
   email: string;
-   role: UserRole;
+  role: UserRole;
   phone?: string;
   avatar?: string;
   adresse?: string;
@@ -131,7 +131,7 @@ export default function ProfilePage() {
   });
   
  
-  // Mettre à jour formData quand user est chargé
+ // Mettre à jour formData quand user est chargé
    useEffect(() => {
   if (apiUserData) {
     // console.log('=== DEBUG API RESPONSE ===');
@@ -156,8 +156,41 @@ export default function ProfilePage() {
       console.error('Structure API inattendue:', apiUserData);
       return;
     }
-  }, [apiUserData]);
-  
+    
+    setUser({
+      id: user.id || '',
+      name: user.name || '',
+      forename: user.forename || '',
+      email: user.email || '',
+      role: user.role || 'malentendant',
+      phone: user.phone || '',
+      avatar: user.avatar || '',
+      adresse: user.adresse || '',
+      Profession: user.Profession || '',
+      onboarding_completed: user.onboarding_completed || false,
+      onboarding_step: user.onboarding_step || 1,
+      langue_parlee: Array.isArray(user.langue_parlee) ? user.langue_parlee : [],
+      level_en_LSF: user.level_en_LSF || '',
+      company_name: user.company_name,
+      niveau_expertise: user.niveau_expertise,
+      niveau_perte_auditive: user.niveau_perte_auditive,
+      status_utilisez_vous_un_appareil_auditif: user.status_utilisez_vous_un_appareil_auditif || false,
+      Jour_disponible: user.Jour_disponible || '',// Pour traducteur
+      Creneau_horaire_disponible: user.Creneau_horaire_disponible || '',// Pour traducteur
+      Tarif_horaire: user.Tarif_horaire || 0,// Pour traducteur
+      Domaine_activity: user.Domaine_activity || '',//Pour employeur
+      Annee_experience: user.Annee_experience || 0,
+      Type_company: user.Type_company || '',//Pour employeur
+      Adresse_company: user.Adresse_company || '',//Pour employeur
+      Taille_Company: user.Taille_Company || '',//Pour employeur
+      certification: user.certification || '',
+      Site_web: user.Site_web || '',//Pour employeur
+      secondary_roles: Array.isArray(user.secondary_roles) ? user.secondary_roles : [],
+      preferences: Array.isArray(user.preferences) ? user.preferences : [],
+    });
+  }
+}, [apiUserData]);
+
   /**
    * Effet pour rediriger en cas d'erreur d'authentification
    * Redirige vers la page de connexion si l'utilisateur n'est pas authentifié
@@ -354,48 +387,11 @@ export default function ProfilePage() {
   };
 
   
-  /**
-   * Sauvegarde les modifications du profil
-   * Envoie les données mises à jour à l'API
-   */
-  const handleSaveProfile = async () => {
-    if (!user) return;
-    
-    setIsSaving(true);
-    setSaveError(null);
-    setSaveSuccess(false);
-    
-    try {
-      // TODO: Remplacer par l'appel API réel de mise à jour
-      console.log('Envoi des données pour sauvegarde:', user);
-      
-      // Simulation d'un appel API (à remplacer par votre logique réelle)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Exemple d'appel API (à adapter selon votre implémentation)
-      // const response = await fetch('/api/user/profile', {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(user),
-      // });
-      
-      // if (!response.ok) throw new Error('Échec de la sauvegarde');
-      
-      setSaveSuccess(true);
-      setIsEditing(false);
-      
-      // Recharger les données fraîches depuis l'API
-      refetch();
-      
-      // Cacher le message de succès après 3 secondes
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
-      setSaveError('Échec de la sauvegarde. Veuillez vérifier vos données et réessayer.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
+ // Fonction utilitaire pour sécuriser le rôle de l'utilisateur
+const parseUserRole = (role: string | undefined): UserRole => {
+  const validRoles: UserRole[] = ['apprenant','entendant','malentendant','employeur','traducteur','admin'];
+  return role && validRoles.includes(role as UserRole) ? (role as UserRole) : 'malentendant';
+};
   
   /**
    * Génère les initiales à partir du prénom et du nom
@@ -409,6 +405,17 @@ export default function ProfilePage() {
     
     return `${firstInitial}${lastInitial}` || '??';
   }, [user.forename, user.name]);
+
+  // Fonction pour obtenir les initiales du nom
+  const getInitials = (name: string) => {
+    if (!name) return '??';
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
   
   /**
    * Traduit le rôle de l'utilisateur en libellé lisible
@@ -502,7 +509,7 @@ const handleSaveSecondaryRole = async () => {
       }).unwrap();
 
       console.log("Profil secondaire mis à jour :", response.user);
-
+      toast.success('Profil secondaire mis à jour avec succès!');
       // Mise à jour locale des rôles secondaires si besoin
       setUser(prev => ({
         ...prev,
@@ -517,14 +524,7 @@ const handleSaveSecondaryRole = async () => {
       console.error("Erreur lors de la sauvegarde :", err?.data?.message || err?.message || err);
     }
   };
-
-
-  /**
-   * Formate une date ISO en format français lisible
-   * @param dateString - Date au format ISO string
-   * @returns Date formatée en français
-   */
-  const formatDate = (dateString?: string) => {
+  
 
   // Formater la date
   const formatDate = (dateString?: string | Date) => {
@@ -649,6 +649,8 @@ const handleSaveSecondaryRole = async () => {
       </div>
     );
   }
+
+ 
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -1233,7 +1235,7 @@ const handleSaveSecondaryRole = async () => {
         <div className="mt-6 flex justify-end gap-3 border-t pt-4">
           {!isEditingSecondaryRole ? (
             <Button
-              size="sm"
+             // size="sm"
               variant="outline"
               onClick={() => {
                 setSecondaryRoleBackup({ ...user });
@@ -1298,7 +1300,7 @@ const handleSaveSecondaryRole = async () => {
                         {/* Informations spécifiques selon le rôle */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {/* Informations pour les apprenants */}
-                          {user.role === 'apprenant' && (
+                          {/* {user.role === 'apprenant' && (
                             <>
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1324,10 +1326,10 @@ const handleSaveSecondaryRole = async () => {
                                 </div>
                               </div>
                             </>
-                          )}
+                          )} */}
                           
                           {/* Informations pour les traducteurs */}
-                          {user.role === 'traducteur' && (
+                          {/* {user.role === 'traducteur' && (
                             <>
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1344,10 +1346,10 @@ const handleSaveSecondaryRole = async () => {
                                 </p>
                               </div>
                             </>
-                          )}
+                          )} */}
                           
                           {/* Informations pour les employeurs */}
-                          {user.role === 'employeur' && (
+                          {/* {user.role === 'employeur' && (
                             <>
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1362,10 +1364,10 @@ const handleSaveSecondaryRole = async () => {
                                 <p className="text-gray-900 dark:text-white">{user.Domaine_activity || 'Non spécifié'}</p>
                               </div>
                             </>
-                          )}
+                          )} */}
                           
                           {/* Informations pour les malentendants */}
-                          {user.role === 'malentendant' && (
+                          {/* {user.role === 'malentendant' && (
                             <>
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1382,7 +1384,7 @@ const handleSaveSecondaryRole = async () => {
                                 </p>
                               </div>
                             </>
-                          )}
+                          )} */}
                         </div>
                       </div>
                     </CardContent>

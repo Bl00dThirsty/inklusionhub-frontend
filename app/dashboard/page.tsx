@@ -87,7 +87,7 @@ export default function DashboardPage() {
       const token = localStorage.getItem('access_token');
       if (!token) {
         // Rediriger vers l'inscription si pas de token
-        router.push('/sign-in');
+        router.push('/');
       }
     }, [router]);
   

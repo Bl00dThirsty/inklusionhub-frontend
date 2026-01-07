@@ -270,8 +270,6 @@ export default function ProfilePage() {
         Competence: normalizeField(userData.Competence),
       });
     }
-  }, [apiUserData]);
-
   /**
    * Effet pour rediriger en cas d'erreur d'authentification
    * Redirige vers la page de connexion si l'utilisateur n'est pas authentifié
@@ -320,7 +318,7 @@ export default function ProfilePage() {
     setSaveSuccess(false);
   };
 
-  /**
+   /**
    * Sauvegarde les modifications du profil
    * Envoie les données mises à jour à l'API
    */
@@ -365,6 +363,17 @@ export default function ProfilePage() {
     
     return `${firstInitial}${lastInitial}` || '??';
   }, [user.forename, user.name]);
+
+  // Fonction pour obtenir les initiales du nom
+  const getInitials = (name: string) => {
+    if (!name) return '??';
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
   
   /**
    * Traduit le rôle de l'utilisateur en libellé lisible
@@ -859,6 +868,8 @@ export default function ProfilePage() {
       </div>
     );
   }
+
+ 
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

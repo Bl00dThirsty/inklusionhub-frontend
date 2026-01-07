@@ -226,9 +226,9 @@ export const api = createApi({
       invalidatesTags: ["User"],
     }),
 
-    updateSecondaryRoleProfile: build.mutation<
-  UpdateSecondaryRoleProfileResponse,
-  UpdateSecondaryRoleProfileRequest
+updateSecondaryRoleProfile: build.mutation<
+UpdateSecondaryRoleProfileResponse,
+UpdateSecondaryRoleProfileRequest
 >({
   query: ({ role, data }) => ({
     url: `/user/me/secondary-roles/${role}/`,  // Rôle dans l'URL

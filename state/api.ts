@@ -230,12 +230,12 @@ export const api = createApi({
   UpdateSecondaryRoleProfileResponse,
   UpdateSecondaryRoleProfileRequest
 >({
-  query: (payload) => ({
-    url: '/user/me/secondary-roles/',
+  query: ({ role, data }) => ({
+    url: `/user/me/secondary-roles/${role}/`,  // Rôle dans l'URL
     method: 'PATCH',
-    body: payload,
+    body: data,  // Seulement les données dans le body
   }),
-  invalidatesTags: ["User"], // On invalide le cache User pour avoir les données à jour
+  invalidatesTags: ["User"],
 }),
 
     getTempData: build.query<{company_name: string; niveau_expertise: string}, void>({

@@ -52,9 +52,9 @@ export function SecondaryRolesDisplay({
 }: SecondaryRolesDisplayProps) {
   
   // Filtrer les rôles secondaires
-  const filteredRoles = secondaryRoles.filter(
-    role => role !== mainRole && role !== 'admin'
-  );
+ const filteredRoles = Array.from(
+  new Set([mainRole, ...secondaryRoles])
+).filter(role => role !== 'admin');
 
   // Limiter l'affichage si nécessaire
   const displayedRoles = maxDisplay > 0 

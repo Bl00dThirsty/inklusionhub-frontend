@@ -59,7 +59,7 @@ export default function DashboardHeader({
   const getNavItems = () => {
     const baseItems = [
       { label: 'Tableau de bord', href: '/dashboard', icon: '🏠' },
-      { label: 'Communication', href: '/Communication/Components', icon: '💬' },
+      { label: 'Communication', href: '/Communication', icon: '💬' },
       { label: 'Formation', href: '/dashboard/formation', icon: '📚' },
     ];
 

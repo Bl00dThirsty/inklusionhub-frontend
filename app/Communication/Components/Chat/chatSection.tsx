@@ -7,19 +7,13 @@ interface User {
   name: string;
   avatar: string;
   status: string;
-  messages: {
-    type: "sent" | "received" | "image";
-    text?: string;
-    image?: string;
-    timestamp?: string;
-  }[];
 }
 
 interface ChatSectionProps {
   users: User[];
   activeUserId: number | null;
   onSelectUser: (user: User) => void;
-   className?: string;
+  className?: string;
 }
 
 export default function ChatSection({

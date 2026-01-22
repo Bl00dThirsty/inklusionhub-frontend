@@ -270,6 +270,8 @@ export default function ProfilePage() {
         Competence: normalizeField(userData.Competence),
       });
     }
+  }, [apiUserData]);
+
   /**
    * Effet pour rediriger en cas d'erreur d'authentification
    * Redirige vers la page de connexion si l'utilisateur n'est pas authentifié
@@ -318,7 +320,7 @@ export default function ProfilePage() {
     setSaveSuccess(false);
   };
 
-   /**
+  /**
    * Sauvegarde les modifications du profil
    * Envoie les données mises à jour à l'API
    */
@@ -363,17 +365,6 @@ export default function ProfilePage() {
     
     return `${firstInitial}${lastInitial}` || '??';
   }, [user.forename, user.name]);
-
-  // Fonction pour obtenir les initiales du nom
-  const getInitials = (name: string) => {
-    if (!name) return '??';
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
   
   /**
    * Traduit le rôle de l'utilisateur en libellé lisible
@@ -573,36 +564,6 @@ export default function ProfilePage() {
     });
   };
 
-
-// const handleSaveSecondaryRole = async () => {
-//     if (!selectedSecondaryRole) return;
-//     try {
-//       const response = await updateSecondaryRoleProfile({
-//         role: selectedSecondaryRole,
-//         data: getSecondaryRoleData(selectedSecondaryRole)
-//       }).unwrap();
-
-//       console.log("Profil secondaire mis à jour :", response.user);
-//       toast.success('Profil secondaire mis à jour avec succès!');
-//       // Mise à jour locale des rôles secondaires si besoin
-//       setUser(prev => ({
-//         ...prev,
-//         secondary_roles: prev.secondary_roles?.includes(selectedSecondaryRole)
-//           ? prev.secondary_roles
-//           : [...(prev.secondary_roles || []), selectedSecondaryRole]
-//       }));
-
-//       setIsEditingSecondaryRole(false);
-//       setIsRoleDialogOpen(false);
-//     } catch (err: any) {
-//       console.error("Erreur lors de la sauvegarde :", err?.data?.message || err?.message || err);
-//     }
-//   };
-  
-
-  // Formater la date
-  const formatDate = (dateString?: string | Date) => {
-
   const handleAvailabilityChange = (
     days: string[],
     startTime: string,
@@ -762,7 +723,6 @@ export default function ProfilePage() {
     }
   };
 
-
   /**
    * Formate une date ISO en format français lisible
    * @param dateString - Date au format ISO string
@@ -899,8 +859,6 @@ export default function ProfilePage() {
       </div>
     );
   }
-
- 
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

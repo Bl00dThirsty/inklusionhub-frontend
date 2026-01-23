@@ -17,7 +17,7 @@ export default function Header() {
       {/* Navigation */}
       <nav className="flex flex-wrap justify-center gap-4 mb-4 md:mb-0 text-sm">
         <Link href="/" className="text-blue-600">Accueil</Link>
-        <Link href="/Communication" className="text-black">Communication</Link>
+        <Link href="/Communication/LandingPage" className="text-black">Communication</Link>
         <Link href="/formation" className="text-black">Formation</Link>
         <Link href="/ViePro/landing_page/" className="text-black">Emplois</Link>
         <Link href="/VieCom/landing_page/" className="text-black">Communauté</Link>

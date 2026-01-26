@@ -2,13 +2,15 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { api } from './api';
 import { setupListeners } from '@reduxjs/toolkit/query';
+import { chatApi } from './chatApi';
 
 export const store = configureStore({
   reducer: {
     [api.reducerPath]: api.reducer,
+     [chatApi.reducerPath]: chatApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(api.middleware),
+    getDefaultMiddleware().concat(api.middleware,chatApi.middleware),
 });
 
 setupListeners(store.dispatch);

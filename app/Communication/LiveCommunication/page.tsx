@@ -258,7 +258,7 @@ export default function LiveCommunication() {
             </div>
             <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
               <Globe className="w-5 h-5 text-blue-500" />
-              <span className="text-sm font-medium">Simple</span>
+              <span className="text-sm font-medium">Multi-langues</span>
             </div>
             <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
               <Headphones className="w-5 h-5 text-green-500" />
@@ -452,7 +452,7 @@ export default function LiveCommunication() {
               
               {showSettings && (
                 <div className="space-y-4 p-4 bg-gray-50 rounded-xl animate-fadeIn">
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Vitesse de lecture: {speechSpeed.toFixed(1)}x
                     </label>
@@ -465,7 +465,7 @@ export default function LiveCommunication() {
                       onChange={e => setSpeechSpeed(parseFloat(e.target.value))}
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary"
                     />
-                  </div>
+                  </div> */}
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -605,7 +605,7 @@ export default function LiveCommunication() {
         </div>
 
         {/* Guide rapide */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
             <h4 className="font-semibold text-blue-800 mb-2">💡 Astuce</h4>
             <p className="text-sm text-blue-700">
@@ -622,6 +622,12 @@ export default function LiveCommunication() {
             <h4 className="font-semibold text-purple-800 mb-2">⚠️ Note</h4>
             <p className="text-sm text-purple-700">
               Pour des résultats optimaux, utilisez Chrome ou Edge et un micro de qualité.
+            </p>
+          </div>
+          <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-4 rounded-xl border border-yellow-100">
+            <h4 className="font-semibold text-yellow-800 mb-2">⏱️ Durée d’écoute</h4>
+            <p className="text-sm text-yellow-700">
+              Enregistrez 60 s max de dictée continue et evitea des textes longs pour la transcription.
             </p>
           </div>
         </div>

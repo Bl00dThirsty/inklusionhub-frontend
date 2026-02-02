@@ -156,7 +156,8 @@ export default function DashboardPage() {
         description: '3 conversations non lues',
         icon: <MessageSquare className="h-6 w-6" />,
         color: 'bg-blue-200',
-        action: 'Voir messages'
+        action: 'Voir messages',
+        link: '/Communication/Components'
       },
       {
         id: 2,
@@ -164,7 +165,8 @@ export default function DashboardPage() {
         description: '2 événements cette semaine',
         icon: <Calendar className="h-6 w-6" />,
         color: 'bg-green-200',
-        action: 'Voir calendrier'
+        action: 'Voir calendrier',
+        link: '/Communaute/Event'
       },
       {
         id: 3,
@@ -172,7 +174,8 @@ export default function DashboardPage() {
         description: 'LSF Niveau 2 - 75% complété',
         icon: <BookOpen className="h-6 w-6" />,
         color: 'bg-purple-200',
-        action: 'Continuer'
+        action: 'Continuer',
+        link: '/formation/my-courses'
       },
       {
         id: 4,
@@ -180,7 +183,8 @@ export default function DashboardPage() {
         description: '5 nouvelles offres correspondantes',
         icon: <Briefcase className="h-6 w-6" />,
         color: 'bg-orange-200',
-        action: 'Explorer'
+        action: 'Explorer',
+        link: '/ViePro/JobListings'
       },
     ];
 
@@ -193,7 +197,8 @@ export default function DashboardPage() {
           description: '12 nouvelles candidatures',
           icon: <Users className="h-6 w-6" />,
           color: 'bg-red-500',
-          action: 'Voir candidatures'
+          action: 'Voir candidatures',
+          link: '/ViePro/Applications'
         }
       ],
       traducteur: [
@@ -203,7 +208,8 @@ export default function DashboardPage() {
           description: '3 demandes de traduction',
           icon: <Clock className="h-6 w-6" />,
           color: 'bg-indigo-500',
-          action: 'Voir demandes'
+          action: 'Voir demandes',
+          link: '/dashboard/translator-requests'
         }
       ],
       apprenant: [
@@ -213,7 +219,8 @@ export default function DashboardPage() {
           description: 'Certificat LSF 1 disponible',
           icon: <TrendingUp className="h-6 w-6" />,
           color: 'bg-pink-500',
-          action: 'Télécharger'
+          action: 'Télécharger',
+          link: '/formation/certificates'
         }
       ]
     };
@@ -385,7 +392,7 @@ export default function DashboardPage() {
                   {action.description}
                 </p>
                 
-                <button className="w-full mt-4 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                <button onClick={() => action.link && router.push(action.link)} className="w-full mt-4 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
                   {action.action}
                   <ArrowRight className="h-4 w-4" />
                 </button>

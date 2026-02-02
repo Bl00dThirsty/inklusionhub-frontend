@@ -611,8 +611,9 @@ const parseUserRole = (role: string | undefined): UserRole => {
     });
   };
 
-  
+//SECONDARY ROLE
 
+  
   // Effet pour initialiser modalData quand un rôle est sélectionné
   useEffect(() => {
     if (selectedSecondaryRole && isRoleDialogOpen) {

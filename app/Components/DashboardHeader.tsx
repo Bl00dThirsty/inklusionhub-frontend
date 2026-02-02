@@ -60,7 +60,7 @@ export default function DashboardHeader({
     const baseItems = [
       { label: 'Tableau de bord', href: '/dashboard', icon: '🏠' },
       { label: 'Communication', href: '/Communication', icon: '💬' },
-      { label: 'Formation', href: '/dashboard/formation', icon: '📚' },
+      { label: 'Formation', href: '/formation/', icon: '📚' },
     ];
 
     if (userRole === 'traducteur') {

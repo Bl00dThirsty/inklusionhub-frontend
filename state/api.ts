@@ -140,15 +140,13 @@ export interface UpdateAvatarResponse {
 export const api = createApi({
   baseQuery: fetchBaseQuery({ 
     baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000',
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("access_token"); 
-      console.log('Token récupéré:', token); 
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-        console.log('Headers Authorization:', headers.get('Authorization'));
-      }
-      return headers;
-    },
+    prepareHeaders: (headers, { endpoint }) => {
+  const token = localStorage.getItem("access_token");
+  if (token && endpoint !== "loginUser") { // ⚠️ NE PAS envoyer le token pour login
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  return headers;
+}
   }),
   reducerPath: "api",
   tagTypes: ["User", "Profile"],

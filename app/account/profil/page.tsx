@@ -217,31 +217,6 @@ export default function ProfilePage() {
   };
   
 
-  /**
-   * Bascule entre le mode édition et le mode visualisation
-   * Réinitialise les données en cas d'annulation
-   */
-  // const handleEditToggle = () => {
-  //   if (isEditing) {
-  //     // Annuler l'édition et recharger les données originales
-  //     if (apiUserData) {
-  //       const userData = apiUserData.user || apiUserData;
-  //       setUser(prev => ({ 
-  //         ...prev, 
-  //         name: userData.name || '',
-  //         forename: userData.forename || '',
-  //         email: userData.email || '',
-  //         phone: userData.phone || '',
-  //         adresse: userData.adresse || '',
-  //         Profession: userData.Profession || '',
-  //       }));
-  //     }
-  //   }
-  //   setIsEditing(!isEditing);
-  //   setSaveError(null);
-  //   setSaveSuccess(false);
-  // };
-
    // Fonction pour gérer la sauvegarde
   const handleSaveProfile = async () => {
     try {
@@ -635,7 +610,9 @@ const parseUserRole = (role: string | undefined): UserRole => {
       };
     });
   };
+
 //SECONDARY ROLE
+
   
   // Effet pour initialiser modalData quand un rôle est sélectionné
   useEffect(() => {

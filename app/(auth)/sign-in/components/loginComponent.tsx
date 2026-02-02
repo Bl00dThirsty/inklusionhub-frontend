@@ -85,50 +85,32 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   try {
     const result = await login({ email, password }).unwrap();
-    
-    console.log('Réponse login complète:', result);
-    console.log('Structure de la réponse:', {
-      hasTokens: !!result.tokens,
-      tokensKeys: result.tokens ? Object.keys(result.tokens) : 'no tokens',
-      hasUser: !!result.user,
-      userKeys: result.user ? Object.keys(result.user) : 'no user',
-    });
-    
-    // Vérifiez la structure exacte de la réponse
-    // Peut-être que les tokens sont directement à la racine, pas dans un objet "tokens"
-    if (result.access && result.refresh) {
-      // Cas 1: Les tokens sont directement dans result
-      console.log('Tokens à la racine de la réponse');
-      authLogin({ 
-        access: result.access, 
-        refresh: result.refresh 
-      }, result.user || {});
-      
-    } else if (result.tokens && result.tokens.access) {
-      // Cas 2: Les tokens sont dans un objet "tokens"
-      console.log('Tokens dans result.tokens');
-      authLogin(result.tokens, result.user);
-      
-    } else {
-      // Cas 3: Structure inattendue
-      console.error('Structure de réponse inattendue:', result);
-      setErrors({ 
-        submit: "Réponse du serveur invalide. Veuillez réessayer." 
-      });
-      return;
-    }
-    
-    // Redirection
-    console.log('Redirection vers /dashboard');
+
+    if (!result?.access || !result?.refresh) {
+  throw new Error("Tokens manquants dans la réponse");
+}
+
+    // 🔐 STOCKAGE DES TOKENS (OBLIGATOIRE)
+    localStorage.setItem("access_token", result.access);
+    localStorage.setItem("refresh_token", result.refresh);
+
+    // 🔐 CONTEXTE AUTH (UI / state)
+    authLogin(
+      {
+        access: result.access,
+        refresh: result.refresh,
+      },
+      result.user
+    );
+
     router.push("/dashboard");
-    
-  } catch (error: any) {
+
+  } catch (error) {
     console.error("Erreur login:", error);
-    setErrors({ 
-      submit: "Email ou mot de passe incorrect." 
-    });
+    setErrors({ submit: "Email ou mot de passe incorrect." });
   }
 };
+
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>

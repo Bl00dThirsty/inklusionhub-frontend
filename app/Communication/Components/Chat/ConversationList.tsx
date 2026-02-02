@@ -1,86 +1,112 @@
 "use client";
-import { useState, useEffect } from "react";
-import { Search } from "lucide-react";
-import ConversationItem from "./ConversationItem";
 
-interface User {
-  id: number;
-  name: string;
-  avatar: string;
-  status: string;
-  messages: { text: string }[];
+import { useState } from "react";
+import { Plus, Search } from "lucide-react";
+import { Conversation } from "@/state/chatApi";
+import UserSearchDrawer from "./UserSearchDrawer";
+
+interface Props {
+  conversations: Conversation[];
+  currentUserId: string;
+  activeConversationId: string | null;
+  onSelectConversation: (id: string) => void;
 }
 
-interface ConversationListProps {
-  users: {
-    status: string;
-    id: number;
-    name: string;
-    avatar: string;
-    messages: {
-      type: "sent" | "received" | "image";
-      text?: string;
-      image?: string;
-      timestamp?: string;
-    }[];
-  }[];
-  onSelectUser: (userId: number) => void;
-}
-export default function ConversationList({ users, onSelectUser }: ConversationListProps) {
-  // On sélectionne par défaut le premier utilisateur en ligne
-  const [activeUserId, setActiveUserId] = useState<number | null>(null);
+export default function ConversationList({
+  conversations,
+  currentUserId,
+  activeConversationId,
+  onSelectConversation,
+}: Props) {
+  const [search, setSearch] = useState("");
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  useEffect(() => {
-    const onlineUser = users.find((u) => u.status === "En ligne");
-    if (onlineUser) setActiveUserId(onlineUser.id);
-  }, [users]);
+  const filtered = conversations
+  // ✅ garder uniquement les conversations avec messages
+  .filter((conv) => conv.last_message !== null)
+  // ✅ filtre de recherche
+  .filter((conv) => {
+    const other = conv.participants.find((u) => u.id !== currentUserId);
+    return other?.name.toLowerCase().includes(search.toLowerCase());
+  });
 
-  const handleSelectUser = (userId: number) => {
-    setActiveUserId(userId);
-    onSelectUser(userId);
+
+  const handleUserSelected = (conversationId: string) => {
+    // Ajouter la conversation à la liste
+    onSelectConversation(conversationId);
+    setIsDrawerOpen(false);
   };
 
   return (
-    <div className="col-span-3 border-r pr-4 flex flex-col h-full">
-      <h2 className="font-semibold mb-3 text-black">Conversation</h2>
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="p-4 border-b flex items-center gap-2">
+        <button
+          onClick={() => setIsDrawerOpen(true)}
+          className="flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full hover:bg-blue-500"
+        >
+          <Plus size={16} />
+        </button>
 
-      {/* Barre de recherche */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
         <input
-          type="text"
-          placeholder="Rechercher une discussion..."
-          className="w-full pl-10 pr-3 py-2 border rounded-lg text-sm focus:ring focus:ring-primary/20"
+          className="flex-1 mt-2 px-3 py-2 border rounded-lg text-sm"
+          placeholder="Rechercher..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
         />
       </div>
 
-      {/* Liste */}
-      <div className="space-y-3 overflow-y-auto flex-1 pr-2">
-        {users.map((user) => {
-          const lastMessage =
-            user.messages && user.messages.length > 0
-              ? user.messages[user.messages.length - 1]?.text || ""
-              : "";
-
-          const isActive = user.id === activeUserId;
+      {/* List */}
+      <div className="flex-1 overflow-y-auto ">
+        {filtered.map((conv) => {
+          const other = conv.participants.find(
+            (u) => u.id !== currentUserId
+          );
+          if (!other) return null;
 
           return (
-            <div
-              key={user.id}
-              onClick={() => handleSelectUser(user.id)}
-              className={`w-full text-left rounded-xl cursor-pointer ${
-                isActive ? "bg-gray-100" : "hover:bg-gray-50"
+            <button
+              key={conv.id}
+              onClick={() => onSelectConversation(conv.id)}
+              className={`w-full flex items-center gap-3 p-3 text-left ${
+                conv.id === activeConversationId
+                  ? "bg-gray-100"
+                  : "hover:bg-gray-50"
               }`}
             >
-              <ConversationItem
-                name={user.name}
-                lastMessage={lastMessage}
-                avatar={user.avatar}
+              <img
+                src={other.avatar || "/default-avatar.png"}
+                className="w-10 h-10 rounded-full"
               />
-            </div>
+
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate text-black">{other.name}</p>
+                <p className="text-xs text-gray-500 truncate">
+                  {conv.last_message?.content ?? "Aucun message"}
+                </p>
+              </div>
+
+              {conv.unread_count > 0 && (
+                <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  {conv.unread_count}
+                </span>
+              )}
+            </button>
           );
         })}
+
+        {filtered.length === 0 && (
+          <p className="text-gray-500 p-4">Aucune conversation trouvée</p>
+        )}
       </div>
+
+      {/* UserSearchDrawer */}
+      {isDrawerOpen && (
+        <UserSearchDrawer
+          onClose={() => setIsDrawerOpen(false)}
+          onSelectConversation={handleUserSelected}
+        />
+      )}
     </div>
   );
 }

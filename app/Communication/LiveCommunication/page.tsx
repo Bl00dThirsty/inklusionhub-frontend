@@ -1,6 +1,6 @@
 "use client";
 
-import { Mic, Volume2, StopCircle, RotateCcw, Download, Settings, Headphones, MessageSquare, Zap, User, Globe, VolumeX, Volume1, Volume2 as Volume2Icon } from "lucide-react";
+import { Mic, Volume2, StopCircle, RotateCcw, Download, Settings, Headphones, MessageSquare, Zap, User, Globe, VolumeX, Volume1, Volume2 as Volume2Icon, ArrowLeft } from "lucide-react";
 import { useSpeechRecognition } from "../../Components/hooks/useSpeechResognition";
 import { useTextToSpeech } from "../../Components/hooks/useTextToSpeech";
 import { useState, useEffect, useRef } from "react";
@@ -248,6 +248,15 @@ export default function LiveCommunication() {
           <h1 className="text-4xl font-bold text-gray-900 mb-3">
             Communication <span className="text-primary">Live</span>
           </h1>
+          <div className="flex items-center gap-3 mb-2">
+        <button
+          onClick={() => router.back()}
+          className="p-2 rounded-full gap-2 bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center"
+          aria-label="Retour"
+        >
+          <ArrowLeft size={22} />
+        </button>
+        </div>
           <p className="text-gray-600 text-lg max-w-3xl mx-auto">
             Système de communication accessible en temps réel : transformez la parole en texte et le texte en parole
           </p>

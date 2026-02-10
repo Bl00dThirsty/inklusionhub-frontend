@@ -1,12 +1,12 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Head from 'next/head';
-import CourseForm from '@/app/Components/Formation/CourseForm';
+import ModuleForm from '../../../../Components/Formation/ModuleForm';
 import { useGetCourseBySlugQuery } from '@/state/learningApi';
 import { useGetCurrentUserQuery} from '@/state/api';
 import { toast } from 'sonner';
-import { useAuth } from '../../Components/hooks/useAuth';
+import { FiArrowLeft } from 'react-icons/fi';
 import DashboardHeader from '@/app/Components/DashboardHeader';
 
 interface UserData {
@@ -21,7 +21,8 @@ interface UserData {
 }
 
 
-const CreateCoursePage = () => {
+const CreateModulePage = () => {
+  const { courseId } = useParams();
   const router = useRouter();
  // const { user, isLoading: authLoading } = useAuth();
   // Vérifier si l'utilisateur est admin ou instructeur
@@ -147,9 +148,10 @@ if (authLoading) {
     );
   }
 
-  const handleSuccess = (course: { id: string }) => {
-    // Rediriger vers la page d'ajout des modules
-    router.push(`/formation/${course.id}/modules/create`);
+  
+  const handleSuccess = (newModule: any) => {
+    // Redirection vers la page du cours
+    router.push(`/formation/${courseId}`);
   };
 
   return (
@@ -162,76 +164,51 @@ if (authLoading) {
             userAvatar={avatarUrl}
           />
       <Head>
-        <title>Créer un nouveau cours | InklusionHub</title>
+        <title>Créer un nouveau module pour le cours ${courseId}</title>
       </Head>
       
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="mb-8">
-            <nav className="flex mb-4" aria-label="Breadcrumb">
-              <ol className="flex items-center space-x-4">
-                <li>
-                  <div>
-                    <a href="/formation" className="text-gray-400 hover:text-gray-500">
-                      Apprentissage
-                    </a>
-                  </div>
-                </li>
-                <li>
-                  <div className="flex items-center">
-                    <svg className="flex-shrink-0 h-5 w-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <a href="/formation/" className="ml-4 text-gray-400 hover:text-gray-500">
-                      Cours
-                    </a>
-                  </div>
-                </li>
-                <li>
-                  <div className="flex items-center">
-                    <svg className="flex-shrink-0 h-5 w-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span className="ml-4 text-gray-500 font-medium">Créer un cours</span>
-                  </div>
-                </li>
-              </ol>
-            </nav>
-            
-            <div className="md:flex md:items-center md:justify-between">
-              <div className="flex-1 min-w-0">
-                <h1 className="text-3xl font-bold leading-tight text-gray-900">
-                  Créer un nouveau cours
-                </h1>
-                <p className="mt-2 text-sm text-gray-600">
-                  Remplissez les informations de base de votre cours. Vous pourrez ajouter les modules et leçons ensuite.
-                </p>
-              </div>
-            </div>
-          </div>
+         {/* Header */}
+        <div className="mb-6">
+          <button
+            onClick={() => router.push(`/formation/${courseId}`)}
+            className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          >
+            <FiArrowLeft className="mr-2" />
+            Retour au cours
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Ajouter un module
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Remplissez le formulaire ci-dessous pour créer un nouveau module.
+          </p>
+        </div>
 
-          {/* Form */}
-          <div className="mt-8">
-            <CourseForm course={null} onSuccess={handleSuccess} />
-          </div>
+        {/* Formulaire */}
+        <ModuleForm 
+          courseId={courseId as string}
+          onSuccess={handleSuccess}
+        />
           
           {/* Informations complémentaires */}
           <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-lg font-medium text-blue-800 mb-2">💡 Conseils pour créer un bon cours</h3>
+            <h3 className="text-lg font-medium text-blue-800 mb-2">💡 Conseils pour créer un bon module</h3>
             <ul className="list-disc pl-5 text-blue-700 space-y-1">
               <li>Choisissez un titre clair et descriptif</li>
               <li>La description courte doit donner envie d'en savoir plus</li>
-              <li>Les vidéos LSF doivent être de bonne qualité et bien éclairées</li>
+              
               <li>Prévoyez des quiz après chaque leçon pour valider les acquis</li>
               <li>Ajoutez des sous-titres pour l'accessibilité</li>
             </ul>
           </div>
         </div>
+        </div>
       </div>
-      </div>
+      
     </>
   );
 };
 
-export default CreateCoursePage;
+export default CreateModulePage;

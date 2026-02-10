@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useGetCourseBySlugQuery } from '@/state/learningApi';
+import { useGetCourseByIdQuery, usePublishCourseMutation, 
+    useUnpublishCourseMutation, useDeleteCourseMutation, 
+    useDeleteModuleMutation, useGetCourseModulesQuery,   useGetModuleLessonsQuery,
+      } from '@/state/learningApi';
 import { 
   FiArrowLeft, 
   FiBookOpen, 
@@ -12,9 +15,17 @@ import {
   FiChevronRight,
   FiCheckCircle,
   FiPlayCircle,
-  FiEdit
+  FiEdit,
+  FiPlus,
+  FiTrash2,
+  FiEye,
+  FiLoader,
+  FiChevronUp
 } from 'react-icons/fi';
 import { MdOutlineQuiz } from 'react-icons/md';
+import { useGetCurrentUserQuery} from '@/state/api';
+import { toast } from 'sonner';
+import { getThumbnailUrl, getCoverImageUrl } from '../../Components/utils/imageHelpers';
 
 interface Module {
   id: string;
@@ -24,6 +35,8 @@ interface Module {
   total_points: number;
   lessons_count: number;
   lessons: Lesson[];
+  estimated_hours: number;
+  created_at: string;
 }
 
 interface Lesson {
@@ -35,48 +48,98 @@ interface Lesson {
   is_published: boolean;
   has_quiz: boolean;
   is_completed?: boolean;
+  created_at: string;
 }
 
 const CourseDetailPage = () => {
-  const { slug } = useParams();
+  const { courseId } = useParams()  as { courseId:string }; // Changé de 'slug' à 'courseId'
   const router = useRouter();
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+
+  const { 
+          data: apiUserData, 
+          isLoading:authLoading, 
+          isError, 
+           refetch: refetchCourse      
+      } = useGetCurrentUserQuery();
   
-  const { data: course, isLoading, error } = useGetCourseBySlugQuery(
-    slug as string,
-    { skip: !slug }
-  );
+      // Gérer les erreurs de récupération des données utilisateur
+      useEffect(() => {
+        if (isError) {
+          toast.error('Erreur de chargement, vous êtes redirigé vers la page principale');
+          router.push('/');
+        }
+      }, [isError, router]);
+  
+  
+  // Utilisation de l'endpoint getCourseById avec l'ID
+  const { data: course, isLoading, error, refetch } = useGetCourseByIdQuery(
+    courseId  );
+
+const { 
+  data: modulesData, 
+  isLoading: isLoadingModules, 
+  error: modulesError,
+  refetch: refetchModules 
+} = useGetCourseModulesQuery(
+  courseId as string,
+  { skip: !courseId }
+);
+
+  // Mutations
+  const [publishCourse, { isLoading: isPublishing }] = usePublishCourseMutation();
+  const [unpublishCourse, { isLoading: isUnpublishing }] = useUnpublishCourseMutation();
+
+  //DELETE
+    const [deleteCourse] = useDeleteCourseMutation();
+
 
   // Données simulées pour les modules (à remplacer par votre API)
-  const modules: Module[] = [
-    {
-      id: '1',
-      title: 'Introduction à la LSF',
-      description: 'Découverte des bases de la Langue des Signes Française',
-      order: 1,
-      total_points: 100,
-      lessons_count: 5,
-      lessons: [
-        { id: '1', title: 'Histoire de la LSF', description: 'Origines et développement', lesson_number: 1, duration_minutes: 15, is_published: true, has_quiz: false, is_completed: true },
-        { id: '2', title: 'Alphabet manuel', description: 'Apprendre à signer les lettres', lesson_number: 2, duration_minutes: 25, is_published: true, has_quiz: true, is_completed: true },
-        { id: '3', title: 'Les nombres', description: 'Compter de 0 à 100', lesson_number: 3, duration_minutes: 20, is_published: true, has_quiz: false },
-        { id: '4', title: 'Se présenter', description: 'Dire son nom, son âge', lesson_number: 4, duration_minutes: 30, is_published: true, has_quiz: true },
-        { id: '5', title: 'Exercice pratique', description: 'Mise en situation', lesson_number: 5, duration_minutes: 40, is_published: true, has_quiz: true },
-      ]
-    },
-    {
-      id: '2',
-      title: 'Communication quotidienne',
-      description: 'Signes essentiels pour la vie de tous les jours',
-      order: 2,
-      total_points: 150,
-      lessons_count: 6,
-      lessons: [
-        { id: '6', title: 'La famille', description: 'Signes des membres de la famille', lesson_number: 1, duration_minutes: 20, is_published: true, has_quiz: false },
-        { id: '7', title: 'Les émotions', description: 'Exprimer ses sentiments', lesson_number: 2, duration_minutes: 25, is_published: true, has_quiz: true },
-      ]
-    }
-  ];
+//   const modules: Module[] = [
+//     {
+//       id: '1',
+//       title: 'Introduction à la LSF',
+//       description: 'Découverte des bases de la Langue des Signes Française',
+//       order: 1,
+//       total_points: 100,
+//       lessons_count: 5,
+//       lessons: [
+//         { id: '1', title: 'Histoire de la LSF', description: 'Origines et développement', lesson_number: 1, duration_minutes: 15, is_published: true, has_quiz: false, is_completed: true },
+//         { id: '2', title: 'Alphabet manuel', description: 'Apprendre à signer les lettres', lesson_number: 2, duration_minutes: 25, is_published: true, has_quiz: true, is_completed: true },
+//         { id: '3', title: 'Les nombres', description: 'Compter de 0 à 100', lesson_number: 3, duration_minutes: 20, is_published: true, has_quiz: false },
+//         { id: '4', title: 'Se présenter', description: 'Dire son nom, son âge', lesson_number: 4, duration_minutes: 30, is_published: true, has_quiz: true },
+//         { id: '5', title: 'Exercice pratique', description: 'Mise en situation', lesson_number: 5, duration_minutes: 40, is_published: true, has_quiz: true },
+//       ]
+//     },
+//     {
+//       id: '2',
+//       title: 'Communication quotidienne',
+//       description: 'Signes essentiels pour la vie de tous les jours',
+//       order: 2,
+//       total_points: 150,
+//       lessons_count: 6,
+//       lessons: [
+//         { id: '6', title: 'La famille', description: 'Signes des membres de la famille', lesson_number: 1, duration_minutes: 20, is_published: true, has_quiz: false },
+//         { id: '7', title: 'Les émotions', description: 'Exprimer ses sentiments', lesson_number: 2, duration_minutes: 25, is_published: true, has_quiz: true },
+//       ]
+//     }
+//   ];
+
+    // Utilisez les données réelles de l'API et transformez-les pour correspondre à l'interface Module
+  const modules: Module[] = (modulesData || []).map((apiModule: any) => ({
+    ...apiModule,
+    lessons_count: apiModule.lessons_count ?? apiModule.lessons?.length ?? 0,
+    lessons: apiModule.lessons || [],
+  }));
+  
+  // Calculer la progression basée sur les données réelles
+  const totalLessons = modules.reduce((acc, module) => acc + (module.lessons_count || 0), 0);
+  const completedLessons = modules.reduce((acc, module) => {
+    // Si vous avez un champ pour les leçons complétées, ajustez ici
+    return acc + (module.lessons?.filter(l => l.is_completed).length || 0);
+  }, 0);
+  
+  const progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
   const toggleModule = (moduleId: string) => {
     const newExpanded = new Set(expandedModules);
@@ -88,13 +151,128 @@ const CourseDetailPage = () => {
     setExpandedModules(newExpanded);
   };
 
-  const handleLessonClick = (lessonId: string) => {
-    router.push(`/courses/${slug}/lessons/${lessonId}`);
+  const handleEditModule = (moduleId: string) => {
+    router.push(`/formation/${courseId}/modules/edit/${moduleId}`);
+  };
+
+  const handleLessonClick = (lessonId: string, moduleId: string) => {
+    router.push(`/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}`);
+  };
+
+  const handleAddLesson = (moduleId: string) => {  
+    router.push(`/formation/${courseId}/modules/${moduleId}/lessons/create`);   
   };
 
   const handleEditCourse = () => {
-    router.push(`/courses/edit/${course?.id}`);
+    router.push(`/formation/edit/${courseId}`);
   };
+
+  const handleAddModule = () => {
+    router.push(`/formation/${courseId}/modules/create`);
+  };
+
+  const [deleteModule] = useDeleteModuleMutation();
+
+  const handleDeleteModule = (moduleId: string) => {
+
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce module ? Cette action est irréversible.')) {
+        try {
+        deleteModule({ id: moduleId, courseId });
+        toast.success('Module supprimé avec succès.');
+        } catch (error) {
+            console.error('Erreur lors de la suppression du module:', error);
+            toast.error('Erreur lors de la suppression du module.');
+        }
+    }
+    };
+
+  const handleDeleteCourse = () => {
+    if (!courseId) return;
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce cours ? Cette action est irréversible.')) {
+      try {
+    deleteCourse(courseId);
+      router.push('/formation');
+      toast.success('Cours supprimé avec succès.');
+      } catch (error) {
+        console.error('Erreur lors de la suppression du cours:', error);
+        toast.error('Erreur lors de la suppression du cours.');
+      }
+    }
+  };
+
+  const handlePreviewCourse = () => {
+    // Pour prévisualiser, on utilise le slug si disponible, sinon l'ID
+    const previewPath = course?.slug 
+      ? `/preview/${course.slug}`
+      : `/preview/course/${courseId}`;
+    router.push(previewPath);
+  };
+
+  const handlePublishCourse = async () => {
+    if (!courseId) return;
+    
+    const action = course?.is_published ? 'dépublier' : 'publier';
+    
+    if (window.confirm(`Voulez-vous ${action} ce cours ?`)) {
+        
+      try {
+        if (course?.is_published) {
+          // Dépublier le cours
+          await unpublishCourse(courseId).unwrap();
+        } else {
+          // Publier le cours
+          await publishCourse(courseId).unwrap();
+        }
+        
+        // Recharger les données
+        refetchCourse();
+        
+        // Afficher un toast de succès
+        // Vous pouvez utiliser react-hot-toast, sonner, ou un autre système de notification
+        alert(`Cours ${action === 'publier' ? 'publié' : 'dépublié'} avec succès !`);
+        
+      } catch (error) {
+        console.error(`Erreur lors de l'${action} du cours:`, error);
+        
+        // Afficher un message d'erreur
+        alert(`Erreur lors de l'${action} du cours. Veuillez réessayer.`);
+      }
+    }
+  };
+
+  // Version optimisée avec gestion d'état de chargement
+  const handlePublishCourseOptimized = async () => {
+    if (!courseId || isPublishing || isUnpublishing) return;
+    
+    const action = course?.is_published ? 'dépublier' : 'publier';
+    const confirmationMessage = course?.is_published 
+      ? 'Voulez-vous dépublier ce cours ? Les apprenants ne pourront plus y accéder.'
+      : 'Voulez-vous publier ce cours ? Il sera accessible aux apprenants.';
+    
+    if (window.confirm(confirmationMessage)) {
+      try {
+        if (course?.is_published) {
+          await unpublishCourse(courseId).unwrap();
+        } else {
+          await publishCourse(courseId).unwrap();
+        }
+        
+        // Les tags invalidés vont automatiquement recharger les données
+        // Vous pouvez aussi utiliser refetch() si nécessaire
+        
+      } catch (error: any) {
+        const errorMessage = error?.data?.detail 
+          || error?.data?.message 
+          || `Erreur lors de l'${action} du cours`;
+        
+        alert(`❌ ${errorMessage}`);
+      }
+    }
+  };
+  const thumbnailUrl = getThumbnailUrl(course?.thumbnail);
+  const coverUrl = getCoverImageUrl(course?.cover_image);
+
+
 
   if (isLoading) {
     return (
@@ -116,47 +294,72 @@ const CourseDetailPage = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-6xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-700">Cours non trouvé</p>
-            <button
-              onClick={() => router.back()}
-              className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-            >
-              Retour
-            </button>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <h3 className="text-lg font-medium text-red-800 mb-2">Cours non trouvé</h3>
+            <p className="text-red-600 mb-4">
+              Le cours avec l'ID "{courseId}" n'existe pas ou vous n'avez pas les permissions pour y accéder.
+            </p>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={() => router.back()}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                <FiArrowLeft className="inline mr-2" />
+                Retour
+              </button>
+              <button
+                onClick={() => router.push('/courses')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Voir tous les cours
+              </button>
+            </div>
           </div>
         </div>
       </div>
     );
   }
 
-  const totalLessons = modules.reduce((acc, module) => acc + module.lessons.length, 0);
-  const completedLessons = modules.flatMap(m => m.lessons).filter(l => l.is_completed).length;
-  const progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+//   const totalLessons = modules.reduce((acc, module) => acc + module.lessons.length, 0);
+//   const completedLessons = modules.flatMap(m => m.lessons).filter(l => l.is_completed).length;
+//   const progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+  // Formatage de la date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow">
         <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-6">
             <button
-              onClick={() => router.back()}
+              onClick={() => router.push('/formation')}
               className="inline-flex items-center text-gray-600 hover:text-gray-900"
             >
               <FiArrowLeft className="mr-2" />
               Retour aux cours
             </button>
             
-            <div className="flex items-center gap-4">
-              <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                course.is_published ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-              }`}>
-                {course.is_published ? 'Publié' : 'Brouillon'}
-              </span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handlePreviewCourse}
+                className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                <FiEye className="mr-2" />
+                Prévisualiser
+              </button>
+              
               <button
                 onClick={handleEditCourse}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <FiEdit className="mr-2" />
                 Modifier
@@ -164,26 +367,62 @@ const CourseDetailPage = () => {
             </div>
           </div>
 
-          <div className="mt-6">
-            <h1 className="text-3xl font-bold text-gray-900">{course.title}</h1>
-            {course.subtitle && (
-              <p className="text-xl text-gray-600 mt-2">{course.subtitle}</p>
-            )}
-            
-            <div className="flex flex-wrap gap-4 mt-4">
-              <div className="flex items-center text-gray-600">
-                <FiBookOpen className="mr-2" />
-                <span className="font-medium">{modules.length} modules</span>
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+            {/* Informations principales */}
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+                  course.is_published ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {course.is_published ? 'Publié' : 'Brouillon'}
+                </span>
+                {course.is_featured && (
+                  <span className="px-3 py-1 text-sm font-medium bg-pink-100 text-pink-800 rounded-full">
+                    En vedette
+                  </span>
+                )}
+                {course.is_free && (
+                  <span className="px-3 py-1 text-sm font-medium bg-purple-100 text-purple-800 rounded-full">
+                    Gratuit
+                  </span>
+                )}
               </div>
-              <div className="flex items-center text-gray-600">
-                <FiClock className="mr-2" />
-                <span className="font-medium">{course.estimated_total_hours}h</span>
-              </div>
-              <div className="flex items-center text-gray-600">
-                <FiUsers className="mr-2" />
-                <span className="font-medium">{course.enrolled_count || 0} apprenants</span>
+              
+              <h1 className="text-3xl font-bold text-gray-900">{course.title}</h1>
+              
+              {course.subtitle && (
+                <p className="text-xl text-gray-600 mt-2">{course.subtitle}</p>
+              )}
+              
+              <div className="flex flex-wrap items-center gap-4 mt-4">
+                <div className="flex items-center text-gray-600">
+                  <FiBookOpen className="mr-2" />
+                  <span className="font-medium">{modules.length} modules</span>
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <FiClock className="mr-2" />
+                  <span className="font-medium">{course.estimated_total_hours || 0}h</span>
+                </div>
+                <div className="flex items-center text-gray-600">
+                  <FiUsers className="mr-2" />
+                  <span className="font-medium">{course.enrolled_count || 0} apprenants</span>
+                </div>
+                <div className="text-gray-500 text-sm">
+                  ID: <code className="bg-gray-100 px-2 py-1 rounded">{courseId}</code>
+                </div>
               </div>
             </div>
+
+            {/* Miniature */}
+            {course.thumbnail && (
+              <div className="flex-shrink-0">
+                <img
+                  src={thumbnailUrl}
+                  alt={course.title}
+                  className="w-32 h-32 object-cover rounded-lg shadow"
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -192,146 +431,347 @@ const CourseDetailPage = () => {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Colonne gauche - Contenu du cours */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             {/* Description */}
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Description du cours</h2>
-              <div className="prose max-w-none">
-                <p className="text-gray-700 mb-4">{course.short_description}</p>
+              <div className="prose max-w-none space-y-4">
+                <p className="text-gray-700">{course.short_description}</p>
                 <p className="text-gray-700">{course.description}</p>
+                
+                {course.prerequisites && (
+                  <div className="mt-6">
+                    <h3 className="font-medium text-gray-900 mb-2 font-semibold">Prérequis</h3>
+                    <p className="text-gray-700">{course.prerequisites}</p>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Modules et leçons */}
+           {/* Gestion des modules - Section mise à jour */}
             <div className="bg-white rounded-lg shadow">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">Contenu du cours</h2>
-                <div className="flex items-center justify-between mt-2">
-                  <p className="text-gray-600">
-                    {totalLessons} leçons • {progress}% complété
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Modules et leçons</h2>
+                  <p className="text-gray-600 mt-1">
+                    {isLoadingModules ? (
+                      <span className="inline-flex items-center">
+                        <FiLoader className="animate-spin mr-2" size={14} />
+                        Chargement des modules...
+                      </span>
+                    ) : (
+                      `${modules.length} modules • ${totalLessons} leçons • ${progress}% complété`
+                    )}
                   </p>
-                  <div className="w-32 bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${progress}%` }}
-                    ></div>
-                  </div>
                 </div>
+                <button
+                  onClick={handleAddModule}
+                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <FiPlus className="mr-2" />
+                  Ajouter un module
+                </button>
               </div>
 
               {/* Liste des modules */}
               <div className="divide-y divide-gray-200">
-                {modules.sort((a, b) => a.order - b.order).map((module) => {
-                  const isExpanded = expandedModules.has(module.id);
-                  const moduleCompletedLessons = module.lessons.filter(l => l.is_completed).length;
-                  const moduleProgress = module.lessons.length > 0 
-                    ? Math.round((moduleCompletedLessons / module.lessons.length) * 100) 
-                    : 0;
-
-                  return (
-                    <div key={module.id} className="transition-colors hover:bg-gray-50">
-                      {/* En-tête du module */}
-                      <button
-                        onClick={() => toggleModule(module.id)}
-                        className="w-full p-6 flex items-center justify-between text-left"
+                {isLoadingModules ? (
+                  <div className="p-8 text-center">
+                    <FiLoader className="mx-auto animate-spin text-blue-600 mb-4" size={32} />
+                    <p className="text-gray-600">Chargement des modules...</p>
+                  </div>
+                ) : modulesError ? (
+                  <div className="p-8 text-center">
+                    <div className="text-red-500 mb-4">❌</div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Erreur de chargement</h3>
+                    <p className="text-gray-600 mb-4">
+                      Impossible de charger les modules. 
+                      <button 
+                        onClick={() => refetchModules()}
+                        className="ml-2 text-blue-600 hover:text-blue-800"
                       >
-                        <div className="flex items-start gap-4">
-                          <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <span className="text-blue-600 font-bold">{module.order}</span>
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                              {module.title}
-                            </h3>
-                            <p className="text-gray-600 text-sm mb-2">{module.description}</p>
-                            <div className="flex items-center gap-4 text-sm text-gray-500">
-                              <span>{module.lessons.length} leçons</span>
-                              <span>{module.total_points} points</span>
-                              <div className="flex items-center gap-2">
-                                <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                                  <div 
-                                    className="bg-green-600 h-1.5 rounded-full"
-                                    style={{ width: `${moduleProgress}%` }}
-                                  ></div>
+                        Réessayer
+                      </button>
+                    </p>
+                  </div>
+                ) : modules.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <FiBookOpen className="mx-auto text-gray-400 mb-4" size={48} />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun module</h3>
+                    <p className="text-gray-600 mb-4">Commencez par ajouter votre premier module.</p>
+                    <button
+                      onClick={handleAddModule}
+                      className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    >
+                      <FiPlus className="mr-2" />
+                      Créer un module
+                    </button>
+                  </div>
+                ) : (
+                  modules.sort((a, b) => a.order - b.order).map((module) => {
+                    const isExpanded = expandedModules.has(module.id);
+                    // Calculer la progression du module
+                    const moduleLessons = module.lessons || [];
+                    const moduleCompletedLessons = moduleLessons.filter(l => l.is_completed).length;
+                    const moduleProgress = moduleLessons.length > 0 
+                      ? Math.round((moduleCompletedLessons / moduleLessons.length) * 100) 
+                      : 0;
+
+                    return (
+                      <div key={module.id} className="transition-colors hover:bg-gray-50">
+                        {/* En-tête du module */}
+                        <div className="p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-start gap-4 flex-1">
+                              <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <span className="text-blue-600 font-bold">{module.order}</span>
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                                      {module.title}
+                                    </h3>
+                                    {module.description && (
+                                      <p className="text-gray-600 text-sm">{module.description}</p>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() => toggleModule(module.id)}
+                                    className="text-gray-400 hover:text-gray-600 ml-4"
+                                    title={isExpanded ? "Réduire" : "Développer"}
+                                  >
+                                    {isExpanded ? <FiChevronUp size={24} /> : <FiChevronDown size={24} />}
+                                  </button>
                                 </div>
-                                <span>{moduleProgress}%</span>
+                                
+                                {/* Métadonnées du module */}
+                                <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                                  <span className="flex items-center gap-1">
+                                    <FiBookOpen size={14} />
+                                    {module.lessons_count || moduleLessons.length} leçons
+                                  </span>
+                                  <span>{module.total_points} points</span>
+                                  {module.estimated_hours && (
+                                    <span className="flex items-center gap-1">
+                                      <FiClock size={14} />
+                                      {module.estimated_hours}h
+                                    </span>
+                                  )}
+                                  {moduleLessons.length > 0 && (
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                                        <div 
+                                          className="bg-green-600 h-1.5 rounded-full transition-all duration-300"
+                                          style={{ width: `${moduleProgress}%` }}
+                                        ></div>
+                                      </div>
+                                      <span>{moduleProgress}%</span>
+                                    </div>
+                                  )}
+                                  <span className="text-xs text-gray-400">
+                                    Créé le {formatDate(module.created_at)}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="text-gray-400">
-                            {isExpanded ? <FiChevronDown size={24} /> : <FiChevronRight size={24} />}
-                          </span>
-                        </div>
-                      </button>
 
-                      {/* Leçons du module (déroulées) */}
-                      {isExpanded && (
-                        <div className="px-6 pb-6">
-                          <div className="ml-16 space-y-3">
-                            {module.lessons.sort((a, b) => a.lesson_number - b.lesson_number).map((lesson) => (
-                              <div
-                                key={lesson.id}
-                                onClick={() => handleLessonClick(lesson.id)}
-                                className="group p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-3">
-                                    <div className="flex-shrink-0">
-                                      {lesson.is_completed ? (
-                                        <FiCheckCircle className="text-green-500" size={20} />
-                                      ) : (
-                                        <FiPlayCircle className="text-gray-400 group-hover:text-blue-500" size={20} />
-                                      )}
-                                    </div>
-                                    <div>
-                                      <div className="flex items-center gap-2">
-                                        <h4 className="font-medium text-gray-900 group-hover:text-blue-600">
-                                          {lesson.lesson_number}. {lesson.title}
-                                        </h4>
-                                        {lesson.has_quiz && (
-                                          <MdOutlineQuiz className="text-yellow-500" size={16} />
-                                        )}
-                                      </div>
-                                      <p className="text-sm text-gray-600 mt-1">{lesson.description}</p>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-4">
-                                    <span className="text-sm text-gray-500">
-                                      {lesson.duration_minutes} min
-                                    </span>
-                                    {!lesson.is_published && (
-                                      <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded">
-                                        Brouillon
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                          {/* Actions du module */}
+                          <div className="ml-16 mt-4 flex gap-2">
+                            <button
+                              onClick={() => handleEditModule(module.id)}
+                              className="px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors"
+                            >
+                              Éditer
+                            </button>
+                            <button
+                              onClick={() => handleDeleteModule(module.id)}
+                              className="px-3 py-1 text-sm bg-red-50 text-red-700 rounded hover:bg-red-100 transition-colors"
+                            >
+                              Supprimer
+                            </button>
+                            <button
+                              onClick={() => handleAddLesson(module.id)}
+                              className="px-3 py-1 text-sm bg-green-50 text-green-700 rounded hover:bg-green-100 transition-colors"
+                            >
+                              Ajouter une leçon
+                            </button>
                           </div>
+
+                          {/* Leçons du module (déroulées) */}
+                          {isExpanded && (
+                            <div className="mt-6 ml-16 space-y-3">
+                              {moduleLessons.length === 0 ? (
+                                <div className="p-4 text-center border border-gray-200 rounded-lg">
+                                  <p className="text-gray-500">Aucune leçon dans ce module.</p>
+                                  <button
+                                    onClick={() => handleAddLesson(module.id)}
+                                    className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+                                  >
+                                    Ajouter une première leçon
+                                  </button>
+                                </div>
+                              ) : (
+                                moduleLessons
+                                  .sort((a, b) => a.lesson_number - b.lesson_number)
+                                  .map((lesson) => (
+                                    <div
+                                      key={lesson.id}
+                                      onClick={() => handleLessonClick(lesson.id, module.id)}
+                                      className="group p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all"
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                          <div className="flex-shrink-0">
+                                            {lesson.is_completed ? (
+                                              <FiCheckCircle className="text-green-500" size={20} />
+                                            ) : (
+                                              <FiPlayCircle className="text-gray-400 group-hover:text-blue-500" size={20} />
+                                            )}
+                                          </div>
+                                          <div>
+                                            <div className="flex items-center gap-2">
+                                              <h4 className="font-medium text-gray-900 group-hover:text-blue-600">
+                                                {lesson.lesson_number}. {lesson.title}
+                                              </h4>
+                                              {lesson.has_quiz && (
+                                                <MdOutlineQuiz className="text-yellow-500" size={16} title="Contient un quiz" />
+                                              )}
+                                              {!lesson.is_published && (
+                                                <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-800 rounded">
+                                                  Brouillon
+                                                </span>
+                                              )}
+                                            </div>
+                                            {lesson.description && (
+                                              <p className="text-sm text-gray-600 mt-1">{lesson.description}</p>
+                                            )}
+                                            <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                                              {lesson.duration_minutes && (
+                                                <span>{lesson.duration_minutes} min</span>
+                                              )}
+                                              <span>Créé le {formatDate(lesson.created_at)}</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <div className="text-gray-400 group-hover:text-gray-600">
+                                          <FiChevronRight />
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))
+                              )}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>
 
-          {/* Colonne droite - Informations */}
+          {/* Colonne droite - Informations et actions */}
           <div className="space-y-6">
-            {/* Image du cours */}
-            {course.cover_image && (
-              <div className="bg-white rounded-lg shadow overflow-hidden">
-                <img
-                  src={course.cover_image}
-                  alt={course.title}
-                  className="w-full h-48 object-cover"
-                />
+            {/* Actions principales */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
+              <div className="space-y-3">
+                <button
+                    onClick={handlePublishCourse}
+                    disabled={isPublishing || isUnpublishing}
+                    className={`w-full px-4 py-2 rounded-lg transition-colors flex items-center justify-center ${
+                    course?.is_published
+                      ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 disabled:opacity-50 disabled:cursor-not-allowed'
+                      : 'bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                    }`}
+                >
+                {(isPublishing || isUnpublishing) ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                 </svg>
+                 {course?.is_published ? 'Dépublication...' : 'Publication...'}
+                </>
+               ) : (
+               <>
+                 {course?.is_published ? 'Dépublier le cours' : 'Publier le cours'}
+               </>
+              )}
+              </button>
+                
+                <button
+                  onClick={handleEditCourse}
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <FiEdit className="inline mr-2" />
+                  Modifier les détails
+                </button>
+                
+                <button
+                  onClick={handleAddModule}
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <FiPlus className="inline mr-2" />
+                  Ajouter un module
+                </button>
+                
+                <button
+                  onClick={handleDeleteCourse}
+                  className="w-full px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                >
+                  <FiTrash2 className="inline mr-2" />
+                  Supprimer le cours
+                </button>
               </div>
-            )}
+            </div>
+
+            {/* Informations du cours */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations</h3>
+              <div className="space-y-4">
+                <div>
+                  <span className="text-sm text-gray-600 block">ID du cours</span>
+                  <code className="font-mono text-sm bg-gray-100 px-2 py-1 rounded block truncate">
+                    {courseId}
+                  </code>
+                </div>
+                
+                <div>
+                  <span className="text-sm text-gray-600 block">Difficulté</span>
+                  <span className="font-medium capitalize">{course.difficulty}</span>
+                </div>
+                
+                <div>
+                  <span className="text-sm text-gray-600 block">Langue</span>
+                  <span className="font-medium">
+                    {course.language === 'lsf' ? 'LSF' : 
+                     course.language === 'bilingue' ? 'Bilingue FR/LSF' : 
+                     'Multilingue'}
+                  </span>
+                </div>
+                
+                <div>
+                  <span className="text-sm text-gray-600 block">Durée</span>
+                  <span className="font-medium">{course.estimated_total_hours || 0} heures</span>
+                </div>
+                
+                <div>
+                  <span className="text-sm text-gray-600 block">Date de création</span>
+                  <span className="font-medium">{formatDate(course.created_at)}</span>
+                </div>
+                
+                {course.published_at && (
+                  <div>
+                    <span className="text-sm text-gray-600 block">Date de publication</span>
+                    <span className="font-medium">{formatDate(course.published_at)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Statistiques */}
             <div className="bg-white rounded-lg shadow p-6">
@@ -339,7 +779,7 @@ const CourseDetailPage = () => {
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between mb-1">
-                    <span className="text-sm text-gray-600">Progression</span>
+                    <span className="text-sm text-gray-600">Progression globale</span>
                     <span className="text-sm font-medium">{progress}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
@@ -352,57 +792,21 @@ const CourseDetailPage = () => {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="text-center p-3 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{totalLessons}</div>
-                    <div className="text-sm text-gray-600">Leçons</div>
+                    <div className="text-2xl font-bold text-blue-600">{modules.length}</div>
+                    <div className="text-sm text-gray-600">Modules</div>
                   </div>
                   <div className="text-center p-3 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{completedLessons}</div>
-                    <div className="text-sm text-gray-600">Terminées</div>
+                    <div className="text-2xl font-bold text-green-600">{totalLessons}</div>
+                    <div className="text-sm text-gray-600">Leçons</div>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Informations */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations</h3>
-              <div className="space-y-3">
-                <div>
-                  <span className="text-sm text-gray-600 block">Difficulté</span>
-                  <span className="font-medium">{course.difficulty}</span>
+                
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="text-sm text-gray-600 mb-2">Apprenants inscrits</div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    {course.enrolled_count || 0}
+                  </div>
                 </div>
-                <div>
-                  <span className="text-sm text-gray-600 block">Langue</span>
-                  <span className="font-medium">{course.language}</span>
-                </div>
-                <div>
-                  <span className="text-sm text-gray-600 block">Durée estimée</span>
-                  <span className="font-medium">{course.estimated_total_hours} heures</span>
-                </div>
-                <div>
-                  <span className="text-sm text-gray-600 block">Gratuit</span>
-                  <span className="font-medium">{course.is_free ? 'Oui' : 'Non'}</span>
-                </div>
-                <div>
-                  <span className="text-sm text-gray-600 block">En vedette</span>
-                  <span className="font-medium">{course.is_featured ? 'Oui' : 'Non'}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
-              <div className="space-y-3">
-                <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  Publier le cours
-                </button>
-                <button className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                  Prévisualiser
-                </button>
-                <button className="w-full px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors">
-                  Supprimer le cours
-                </button>
               </div>
             </div>
           </div>

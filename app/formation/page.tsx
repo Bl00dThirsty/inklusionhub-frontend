@@ -9,6 +9,9 @@ import { MdKeyboardArrowRight } from 'react-icons/md';
 import { useGetCurrentUserQuery} from '@/state/api';
 import { toast } from 'sonner';
 import DashboardHeader from '../Components/DashboardHeader';
+import { getThumbnailUrl, getCoverImageUrl } from '../Components/utils/imageHelpers';
+import { Cousine } from 'next/font/google';
+
 
 export interface Course {
   id: string;
@@ -60,12 +63,10 @@ const CourseListPage = () => {
 
 
   ///####### user data fetch and avatar handling/////######
-  const { 
+      const { 
           data: apiUserData, 
           isLoading:authLoading, 
-          isError, 
-         
-          
+          isError,        
       } = useGetCurrentUserQuery();
   
       // Gérer les erreurs de récupération des données utilisateur
@@ -153,16 +154,23 @@ const CourseListPage = () => {
   const courses = data?.results || [];
   const totalPages = data?.total_pages || 1;
 
-  const handleViewCourse = (courseSlug: string) => {
-    router.push(`/courses/${courseSlug}`);
+  const handleViewCourse = (courseId: string, slug:string) => {
+    if (userData.role !== 'employeur') {
+     // toast.error('Vous n\'avez pas la permission de voir les détails du cours');
+      router.push(`/formation/${courseId}/${slug}`);
+    
+    } else {
+        router.push(`/formation/${courseId}`);
+    }
+    // router.push(`/formation/${courseId}`);
   };
 
   const handleEditCourse = (courseId: string) => {
-    router.push(`/courses/${courseId}/edit`);
+    router.push(`/formation/edit/${courseId}`);
   };
 
   const handleCreateCourse = () => {
-    router.push('/courses/create_course');
+    router.push('/formation/create_courses');
   };
 
   if (isLoading) {
@@ -179,31 +187,37 @@ const CourseListPage = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-700">Erreur lors du chargement des cours</p>
-            <button
-              onClick={() => refetch()}
-              className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-            >
-              Réessayer
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+//   if (error) {
+//     return (
+//       <div className="min-h-screen bg-gray-50 p-6">
+//         <div className="max-w-7xl mx-auto">
+//           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+//             <p className="text-red-700">Erreur lors du chargement des cours</p>
+//             <button
+//               onClick={() => refetch()}
+//               className="mt-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+//             >
+//               Réessayer
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+//     );
+//   }
 
+//   useEffect(() => {
+        if (error) {
+          toast.error('Erreur lors du chargement des cours');
+          router.push('/dashboard');
+        }
+    //   }, [error, router]);
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <DashboardHeader 
-                    userName={`${userData.name} ${getInitials(userData.forename)}.`}
-                    userRole={userData.role}
-                    userEmail={userData.email}
-                    userAvatar={avatarUrl}
+            userName={`${userData.name} ${getInitials(userData.forename)}.`}
+            userRole={userData.role}
+            userEmail={userData.email}
+            userAvatar={avatarUrl}
         />
       <div className="max-w-7xl mx-auto">
         {/* Header */}
@@ -275,7 +289,7 @@ const CourseListPage = () => {
 
         {/* Liste des cours */}
         <div className="space-y-4">
-          {courses.length === 0 ? (
+          {data?.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-8 text-center">
               <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun cours trouvé</h3>
               <p className="text-gray-600 mb-4">
@@ -290,7 +304,7 @@ const CourseListPage = () => {
               </button>
             </div>
           ) : (
-            courses.map((course: Course) => (
+            data?.map((course: Course) => (
               <div
                 key={course.id}
                 className="bg-white rounded-lg shadow hover:shadow-md transition-shadow overflow-hidden"
@@ -302,7 +316,7 @@ const CourseListPage = () => {
                       <div className="flex items-start gap-4">
                         {course.thumbnail && (
                           <img
-                            src={course.thumbnail}
+                            src={getThumbnailUrl(course.thumbnail)}
                             alt={course.title}
                             className="w-24 h-24 object-cover rounded-lg"
                           />
@@ -366,7 +380,7 @@ const CourseListPage = () => {
                     {/* Actions */}
                     <div className="flex flex-col sm:flex-row md:flex-col gap-2">
                       <button
-                        onClick={() => handleViewCourse(course.slug)}
+                        onClick={() => handleViewCourse(course.id, course.slug)}
                         className="inline-flex items-center justify-center px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
                       >
                         <FiEye className="mr-2" />
@@ -385,7 +399,7 @@ const CourseListPage = () => {
                   {/* Bouton pour voir les détails */}
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <button
-                      onClick={() => handleViewCourse(course.slug)}
+                      onClick={() => handleViewCourse(course.id, course.slug)}
                       className="inline-flex items-center text-blue-600 hover:text-blue-800"
                     >
                       Voir les détails et modules

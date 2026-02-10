@@ -1038,9 +1038,11 @@ const avatarUrl = getAvatarUrl(user.avatar);
                   
                   {/* Informations de date */}
                   <div className="w-full pt-4 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400 space-y-1">
-                    <p>Membre depuis le {formatDate(user.date_joined)}</p>
+                    {user.date_joined && (
+                      <p>Membre depuis le {new Date(user.date_joined).toLocaleDateString('fr-FR')}</p>
+                    )}
                     {user.updated_at && (
-                      <p>Dernière mise à jour : {formatDate(user.updated_at)}</p>
+                      <p>Dernière mise à jour : {new Date(user.updated_at).toLocaleDateString('fr-FR')}</p>
                     )}
                   </div>
                 </div>

@@ -1,11 +1,35 @@
-// src/components/learning/LessonForm.jsx
+"use client";
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useCreateLessonMutation, useUpdateLessonMutation } from '@/state/learningApi';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
-const LessonForm = ({ moduleId, lesson = null, onSuccess }) => {
+interface LessonFormProps {
+  moduleId: string;
+  lesson?: any;
+  onSuccess?: (response: any) => void;
+}
+
+interface LessonFormData {
+  title: string;
+  description: string;
+  lesson_number: number;
+  content_type: 'video' | 'text' | 'interactive' | 'mixed';
+  video_url?: string;
+  video_duration?: number;
+  text_content?: string;
+  has_subtitles: boolean;
+  has_lsf_translation: boolean;
+  lsf_video_url?: string;
+  has_quiz: boolean;
+  quiz_points?: number;
+  quiz_pass_percentage?: number;
+  is_free_preview: boolean;
+  difficulty: 'debutant' | 'intermediaire' | 'avance';
+}
+
+const LessonForm = ({ moduleId, lesson = null, onSuccess }: LessonFormProps) => {
   const router = useRouter();
   const [createLesson, { isLoading: isCreating }] = useCreateLessonMutation();
   const [updateLesson, { isLoading: isUpdating }] = useUpdateLessonMutation();
@@ -16,7 +40,7 @@ const LessonForm = ({ moduleId, lesson = null, onSuccess }) => {
     formState: { errors },
     watch,
     setValue,
-  } = useForm({
+  } = useForm<LessonFormData>({
     defaultValues: lesson ? {
       title: lesson.title,
       description: lesson.description,
@@ -49,19 +73,19 @@ const LessonForm = ({ moduleId, lesson = null, onSuccess }) => {
   const contentType = watch('content_type');
   const hasQuiz = watch('has_quiz');
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data: LessonFormData) => {
     try {
       const formData = new FormData();
       
       // Ajouter le module_id
-      formData.append('module_id', moduleId);
+      formData.append('module', moduleId);
       
       // Ajouter les autres champs
       Object.keys(data).forEach(key => {
         if (key === 'attachments') {
           // Gérer les pièces jointes séparément si nécessaire
         } else {
-          formData.append(key, data[key]);
+          formData.append(key, String(data[key as keyof LessonFormData]));
         }
       });
       
@@ -82,7 +106,11 @@ const LessonForm = ({ moduleId, lesson = null, onSuccess }) => {
       }
     } catch (error) {
       console.error('Erreur:', error);
-      toast.error(error.data?.message || 'Une erreur est survenue');
+      if (typeof error === 'object' && error !== null && 'data' in error && typeof (error as any).data?.message === 'string') {
+        toast.error((error as any).data.message);
+      } else {
+        toast.error('Une erreur est survenue');
+      }
     }
   };
 

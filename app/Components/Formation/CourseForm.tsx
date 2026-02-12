@@ -35,6 +35,7 @@ const CourseForm = ({ course = null, onSuccess }: { course: any; onSuccess?: (re
       prerequisites: course.prerequisites || '',
       learning_outcomes: course.learning_outcomes?.join('\n') || '',
       tags: course.tags?.join(', ') || '',
+      price: course.price || 0,
     } : {
       difficulty: 'debutant',
       language: 'lsf',
@@ -124,6 +125,8 @@ const CourseForm = ({ course = null, onSuccess }: { course: any; onSuccess?: (re
       setCoverImageFile(file);
     }
   };
+
+   const is_free = watch("is_free");
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-4xl mx-auto">
@@ -279,6 +282,33 @@ const CourseForm = ({ course = null, onSuccess }: { course: any; onSuccess?: (re
             </div>
           </div>
         </div>
+
+         {/* 🪙 Champ prix affiché seulement si le cours n'est PAS gratuit */}
+      {!is_free && (
+        <div>
+          <label
+            htmlFor="price"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Prix du cours (en FCFA)
+          </label>
+          <input
+            type="number"
+            id="price"
+            {...register("price", {
+              required: !is_free,
+              min: 0,
+            })}
+            className="mt-1 block w-60 border border-gray-300 rounded-md shadow-sm px-3 py-1 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Ex : 5000"
+          />
+          {errors.price && (
+            <p className="text-red-600 text-sm mt-1">
+              Le prix est requis pour un cours payant.
+            </p>
+          )}
+        </div>
+      )}
 
         {/* Images */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

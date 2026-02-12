@@ -1,5 +1,6 @@
 
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { get } from "http";
 
 // Interfaces pour les cours
 export interface Course {
@@ -27,13 +28,25 @@ export interface Course {
   enrolled_count: number;
   lesson_count: number;
   module_count: number;
+  stats: {
+    lesson_count: number;
+  module_count: number;
+  enrolled_count: number;
+  completion_rate: number;
+  };
+  prerequisites: string;
+  learning_outcomes: string[];
+  tags: string[];
+  completion_rate: number;
+  price?: number;
   created_at: string;
   updated_at: string;
+  published_at?: string;
 }
 
 export interface Module {
   id: string;
-  course_id: string;
+  course: string;
   title: string;
   subtitle?: string;
   description: string;
@@ -42,11 +55,12 @@ export interface Module {
   estimated_hours: number;
   image?: string;
   lesson_count: number;
+  created_at: string;
 }
 
 export interface Lesson {
   id: string;
-  module_id: string;
+  module: string;
   title: string;
   description: string;
   lesson_number: number;
@@ -63,6 +77,7 @@ export interface Lesson {
   is_free_preview: boolean;
   difficulty: string;
   attachments: any[];
+  created_at: string;
 }
 
 export interface Quiz {
@@ -111,6 +126,7 @@ export interface Enrollment {
   total_points_earned: number;
   final_score_percentage?: number;
   certificate_issued: boolean;
+
 }
 
 export interface UserProgress {
@@ -122,6 +138,7 @@ export interface UserProgress {
   quiz_attempts_count: number;
   points_earned: number;
   time_spent_minutes: number;
+  next_lesson: string;
 }
 
 export interface Certificate {
@@ -196,6 +213,7 @@ export interface CreateLessonRequest {
 
 export interface EnrollCourseRequest {
   course_slug: string;
+  course_id: string;
 }
 
 export interface SubmitQuizRequest {
@@ -283,7 +301,7 @@ export const learningApi = createApi({
     }),
 
     getCourseBySlug: build.query<Course, string>({
-      query: (slug) => `courses/${slug}/`,
+      query: (slug) => `api/courses/${slug}/`,
       providesTags: (result, error, slug) => [{ type: "Course", id: slug }],
     }),
 
@@ -298,13 +316,13 @@ export const learningApi = createApi({
 
     // CORRECTION: Pour l'admin, utiliser l'ID
     getCourseById: build.query<Course, string>({
-      query: (id) => `manage/courses/${id}/`,
+      query: (id) => `api/manage/courses/${id}/`,
       providesTags: (result, error, id) => [{ type: "Course", id }],
     }),
 
     updateCourse: build.mutation<Course, { id: string; data: FormData }>({
       query: ({ id, data }) => ({
-        url: `manage/courses/${id}/`,
+        url: `api/manage/courses/${id}/`,
         method: 'PUT',
         body: data,
       }),
@@ -316,7 +334,7 @@ export const learningApi = createApi({
 
     deleteCourse: build.mutation<void, string>({
       query: (id) => ({
-        url: `manage/courses/${id}/`,
+        url: `api/manage/courses/${id}/`,
         method: 'DELETE',
       }),
       invalidatesTags: ["Courses"],
@@ -324,7 +342,7 @@ export const learningApi = createApi({
 
     publishCourse: build.mutation<Course, string>({
       query: (id) => ({
-        url: `manage/courses/${id}/publish/`,
+        url: `api/manage/courses/${id}/publish/`,
         method: 'POST',
       }),
       invalidatesTags: (result) => [
@@ -335,7 +353,7 @@ export const learningApi = createApi({
 
     unpublishCourse: build.mutation<Course, string>({
       query: (id) => ({
-        url: `manage/courses/${id}/unpublish/`,
+        url: `api/manage/courses/${id}/unpublish/`,
         method: 'POST',
       }),
       invalidatesTags: (result) => [
@@ -346,15 +364,20 @@ export const learningApi = createApi({
 
     // =================== MODULES ===================
     getCourseModules: build.query<Module[], string>({
-      query: (courseId) => `manage/modules/?course=${courseId}`,
+      query: (courseId) => `api/manage/modules/?course=${courseId}`,
       providesTags: (result, error, courseId) => [
         { type: "Modules", id: courseId },
       ],
     }),
 
+    getModuleById: build.query<Module, string>({
+      query: (id) => `api/manage/modules/${id}/`,
+      providesTags: (result, error, id) => [{ type: "Module", id }],
+    }),
+
     createModule: build.mutation<Module, FormData>({
       query: (formData) => ({
-        url: 'manage/modules/',
+        url: 'api/manage/modules/',
         method: 'POST',
         body: formData,
       }),
@@ -366,7 +389,7 @@ export const learningApi = createApi({
 
     updateModule: build.mutation<Module, { id: string; data: FormData }>({
       query: ({ id, data }) => ({
-        url: `manage/modules/${id}/`,
+        url: `api/manage/modules/${id}/`,
         method: 'PUT',
         body: data,
       }),
@@ -375,7 +398,7 @@ export const learningApi = createApi({
 
     deleteModule: build.mutation<void, { id: string; courseId: string }>({
       query: ({ id }) => ({
-        url: `manage/modules/${id}/`,
+        url: `api/manage/modules/${id}/`,
         method: 'DELETE',
       }),
       invalidatesTags: (result, error, { courseId }) => [
@@ -385,7 +408,7 @@ export const learningApi = createApi({
 
     // =================== LESSONS ===================
     getModuleLessons: build.query<Lesson[], string>({
-      query: (moduleId) => `manage/lessons/?module=${moduleId}`,
+      query: (moduleId) => `api/manage/lessons/?module=${moduleId}`,
       providesTags: (result, error, moduleId) => [
         { type: "Lessons", id: moduleId },
       ],
@@ -393,19 +416,19 @@ export const learningApi = createApi({
 
     createLesson: build.mutation<Lesson, FormData>({
       query: (formData) => ({
-        url: 'manage/lessons/',
+        url: 'api/manage/lessons/',
         method: 'POST',
         body: formData,
       }),
       invalidatesTags: (result, error, args) => {
-        const moduleId = args.get('module_id') as string | undefined;
+        const moduleId = args.get('module') as string | undefined;
         return [{ type: "Lessons", id: moduleId }];
       },
     }),
 
     updateLesson: build.mutation<Lesson, { id: string; data: FormData }>({
       query: ({ id, data }) => ({
-        url: `manage/lessons/${id}/`,
+        url: `api/manage/lessons/${id}/`,
         method: 'PUT',
         body: data,
       }),
@@ -414,7 +437,7 @@ export const learningApi = createApi({
 
     deleteLesson: build.mutation<void, { id: string; moduleId: string }>({
       query: ({ id }) => ({
-        url: `manage/lessons/${id}/`,
+        url: `api/manage/lessons/${id}/`,
         method: 'DELETE',
       }),
       invalidatesTags: (result, error, { moduleId }) => [
@@ -424,7 +447,7 @@ export const learningApi = createApi({
 
     // =================== QUIZ ===================
     getLessonQuiz: build.query<Quiz, string>({
-      query: (lessonId) => `manage/quiz/?lesson=${lessonId}`,
+      query: (lessonId) => `api/manage/quiz/?lesson=${lessonId}`,
       providesTags: (result, error, lessonId) => [
         { type: "Lesson", id: lessonId },
       ],
@@ -432,7 +455,7 @@ export const learningApi = createApi({
 
     createQuiz: build.mutation<Quiz, Partial<Quiz>>({
       query: (data) => ({
-        url: 'manage/quiz/',
+        url: 'api/manage/quiz/',
         method: 'POST',
         body: data,
       }),
@@ -444,7 +467,7 @@ export const learningApi = createApi({
     // =================== APPRENANT ===================
     enrollCourse: build.mutation<Enrollment, EnrollCourseRequest>({
       query: ({ course_slug }) => ({
-        url: `courses/${course_slug}/enroll/`,
+        url: `api/courses/${course_slug}/enroll/`,
         method: 'POST',
       }),
       invalidatesTags: ["Enrollments"],
@@ -457,8 +480,16 @@ export const learningApi = createApi({
       recommended_courses: Course[];
       user_profile: any;
     }, void>({
-      query: () => 'learner/dashboard/',
+      query: () => 'api/learner/dashboard/',
       providesTags: ["Enrollments"],
+    }),
+
+    //     # GET /api/learner/courses/<course_slug>/ - Détail cours (pour apprenant inscrit)
+    // path('learner/courses/<slug:course_slug>/', 
+    //      views.LearnerCourseDetailView.as_view(), name='learner-course-detail'),
+    getLearnerCourse: build.query<Course, string>({
+      query: (courseSlug) => `api/learner/courses/${courseSlug}/`,
+      providesTags: (result, error, courseSlug) => [{ type: "Course", id: courseSlug }],
     }),
 
     getCourseProgress: build.query<{
@@ -467,7 +498,7 @@ export const learningApi = createApi({
       stats: any;
       modules: any[];
     }, string>({
-      query: (courseSlug) => `learner/courses/${courseSlug}/progress/`,
+      query: (courseSlug) => `api/learner/courses/${courseSlug}/progress/`,
       providesTags: ["Progress"],
     }),
 
@@ -478,7 +509,7 @@ export const learningApi = createApi({
       navigation: any;
     }, { courseSlug: string; lessonNumber: number }>({
       query: ({ courseSlug, lessonNumber }) => 
-        `learner/courses/${courseSlug}/lessons/${lessonNumber}/`,
+        `api/learner/courses/${courseSlug}/lessons/${lessonNumber}/`,
       providesTags: (result, error, { lessonNumber }) => [
         { type: "Progress", id: lessonNumber },
       ],
@@ -491,7 +522,7 @@ export const learningApi = createApi({
       current_attempt: number;
     }, { courseSlug: string; lessonNumber: number }>({
       query: ({ courseSlug, lessonNumber }) => 
-        `learner/courses/${courseSlug}/lessons/${lessonNumber}/quiz/`,
+        `api/learner/courses/${courseSlug}/lessons/${lessonNumber}/quiz/`,
     }),
 
     submitQuiz: build.mutation<SubmitQuizResponse, {
@@ -500,7 +531,7 @@ export const learningApi = createApi({
       data: SubmitQuizRequest;
     }>({
       query: ({ courseSlug, lessonNumber, data }) => ({
-        url: `learner/courses/${courseSlug}/lessons/${lessonNumber}/quiz/`,
+        url: `api/learner/courses/${courseSlug}/lessons/${lessonNumber}/quiz/`,
         method: 'POST',
         body: data,
       }),
@@ -508,13 +539,13 @@ export const learningApi = createApi({
     }),
 
     getCertificate: build.query<Certificate, string>({
-      query: (courseSlug) => `learner/courses/${courseSlug}/certificate/`,
+      query: (courseSlug) => `api/learner/courses/${courseSlug}/certificate/`,
       providesTags: ["Certificates"],
     }),
 
     generateCertificate: build.mutation<Certificate, string>({
       query: (courseSlug) => ({
-        url: `learner/courses/${courseSlug}/certificate/`,
+        url: `api/learner/courses/${courseSlug}/certificate/`,
         method: 'POST',
       }),
       invalidatesTags: ["Certificates"],
@@ -522,11 +553,11 @@ export const learningApi = createApi({
 
     // =================== DASHBOARD ===================
     getAdminStats: build.query<any, void>({
-      query: () => 'admin/stats/',
+      query: () => 'api/admin/stats/',
     }),
 
     getLearnerDashboard: build.query<any, void>({
-      query: () => 'learner/dashboard/',
+      query: () => 'api/learner/dashboard/',
     }),
 
     // =================== CATALOGUE ===================
@@ -545,7 +576,7 @@ export const learningApi = createApi({
         if (params.language) queryParams.append('language', params.language);
         if (params.category) queryParams.append('category', params.category);
         
-        return `catalog/?${queryParams.toString()}`;
+        return `api/catalog/?${queryParams.toString()}`;
       },
       providesTags: ["Courses"],
     }),
@@ -564,7 +595,7 @@ export const learningApi = createApi({
         if (params.language) queryParams.append('language', params.language);
         if (params.is_free !== undefined) queryParams.append('is_free', params.is_free.toString());
         
-        return `search/?${queryParams.toString()}`;
+        return `api/search/?${queryParams.toString()}`;
       },
     }),
   }),
@@ -576,6 +607,7 @@ export const {
   useGetCoursesQuery,
   useGetCourseBySlugQuery,
   useCreateCourseMutation,
+  useGetCourseByIdQuery,
   useUpdateCourseMutation,
   useDeleteCourseMutation,
   usePublishCourseMutation,
@@ -583,6 +615,7 @@ export const {
   
   // Modules
   useGetCourseModulesQuery,
+  useGetModuleByIdQuery,
   useCreateModuleMutation,
   useUpdateModuleMutation,
   useDeleteModuleMutation,

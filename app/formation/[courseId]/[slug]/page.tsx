@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useGetCourseBySlugQuery } from '@/state/learningApi';
 import CourseEnrollmentButton from '../../../Components/Formation/CourseEnrollmentButton';
@@ -19,7 +19,9 @@ import {
   FiStar,
   FiCheckCircle,
   FiPlayCircle,
-  FiArrowLeft
+  FiArrowLeft,
+  FiLoader,
+  FiChevronUp  
 } from 'react-icons/fi';
 import { MdOutlineQuiz } from 'react-icons/md';
 
@@ -37,23 +39,33 @@ interface Module {
 
 interface Lesson {
   id: string;
+  module: string;
   title: string;
   description: string;
   lesson_number: number;
-  duration_minutes: number;
-  is_published: boolean;
+  content_type: 'video' | 'text' | 'interactive' | 'mixed';
+  video_url?: string;
+  video_duration: number;
+  text_content?: string;
+  has_subtitles: boolean;
+  has_lsf_translation: boolean;
+  lsf_video_url?: string;
   has_quiz: boolean;
-  is_completed?: boolean;
+  quiz_points: number;
+  quiz_pass_percentage: number;
+  is_free_preview: boolean;
+  difficulty: string;
+  is_completed: boolean;
+  attachments?: any[];
   created_at: string;
 }
-
 const CoursePublicPage = () => {
   const { slug } = useParams() as { slug: string };
   const { courseId } = useParams()  as { courseId:string };
   const router = useRouter();
   const { user, isLoading: isLoadingAuth } = useAuth();
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
-  
+  const [moduleLessons, setModuleLessons] = useState<Record<string, Lesson[]>>({});
   // const { data: course, isLoading, error } = useGetCourseBySlugQuery(
   //   slug as string,
   //   { skip: !slug }
@@ -75,21 +87,93 @@ const CoursePublicPage = () => {
     { skip: !courseId }
   );
  
-   const modules: Module[] = (modulesData || []).map((apiModule: any) => ({
-    ...apiModule,
-    lessons_count: apiModule.lessons_count ?? apiModule.lessons?.length ?? 0,
-    lessons: apiModule.lessons || [],
-  }));
-  const toggleModule = (moduleId: string) => {
-    const newExpanded = new Set(expandedModules);
-    if (newExpanded.has(moduleId)) {
-      newExpanded.delete(moduleId);
-    } else {
-      newExpanded.add(moduleId);
-    }
-    setExpandedModules(newExpanded);
+       // Utilisez les données réelles de l'API et transformez-les pour correspondre à l'interface Module
+     const modules: Module[] = (modulesData || []).map((apiModule: any) => ({
+       ...apiModule,
+       lessons_count: apiModule.lessons_count ?? moduleLessons[apiModule.id]?.length ?? 0,
+       lessons: moduleLessons[apiModule.id] || [],
+     }));
+   
+      // Hook pour charger les leçons quand un module est expandé
+     const ModuleLessonsLoader = ({ moduleId, isExpanded }: { moduleId: string, isExpanded: boolean }) => {
+       const { data: lessons, isLoading } = useGetModuleLessonsQuery(moduleId, {
+         skip: !isExpanded, // Ne charger que si le module est expandé
+       });
+   
+       useEffect(() => {
+     if (!isExpanded || !lessons) return;
+   
+     setModuleLessons((prev) => {
+       // 🔍 Compare pour éviter la boucle
+       const current = prev[moduleId];
+       const isSame =
+         current &&
+         Array.isArray(current) &&
+         current.length === lessons.length &&
+         current.every((l, i) => l.id === lessons[i].id);
+   
+       // Si les leçons n’ont pas réellement changé, on ne met pas à jour
+       if (isSame) return prev;
+   
+       return { ...prev, [moduleId]: lessons };
+     });
+   }, [lessons, moduleId, isExpanded]);
+   
+       if (isLoading && isExpanded) {
+         return (
+           <div className="mt-2 ml-16 text-gray-500 flex items-center gap-2">
+             <FiLoader className="animate-spin" size={16} />
+             <span className="text-sm">Chargement des leçons...</span>
+           </div>
+         );
+       }
+   
+       return null;
+     };
+   
+      // Fonction pour rafraîchir les leçons d'un module
+     const refreshModuleLessons = (moduleId: string) => {
+       // Invalider le cache pour ce module
+       setModuleLessons(prev => {
+         const newState = { ...prev };
+         delete newState[moduleId];
+         return newState;
+       });
+     };
+     
+     // Calculer la progression basée sur les données réelles
+     const totalLessons = modules.reduce((acc, module) => acc + (module.lessons_count || 0), 0);
+     const completedLessons = modules.reduce((acc, module) => {
+       // Si vous avez un champ pour les leçons complétées, ajustez ici
+       return acc + (module.lessons?.filter(l => l.is_completed).length || 0);
+     }, 0);
+     
+     const progress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+   
+     const toggleModule = (moduleId: string) => {
+       const newExpanded = new Set(expandedModules);
+       if (newExpanded.has(moduleId)) {
+         newExpanded.delete(moduleId);
+       } else {
+         newExpanded.add(moduleId);
+       }
+       setExpandedModules(newExpanded);
+     };
+   
+   const handleLessonClick = (lessonId: string, moduleId: string) => {
+    router.push(`/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}`);
   };
 
+   // Formatage de la date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+  
   const getImageUrl = (path: string | undefined) => {
     if (!path) return '/images/default-course-cover.png';
     const filename = path.split('/').pop() || '';
@@ -292,70 +376,192 @@ const CoursePublicPage = () => {
               
               {/* Modules */}
               <div className="space-y-4">
-                {modules?.map((module: any, index: number) => {
-                  const isExpanded = expandedModules.has(module.id);
-                  const moduleLessons = module.lessons || [];
-                  
-                  return (
-                    <div key={module.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                      <button
-                        onClick={() => toggleModule(module.id)}
-                        className="w-full p-4 bg-gray-50 hover:bg-gray-100 flex items-center justify-between text-left transition-colors"
-                      >
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mr-4">
-                            {module.order || index + 1}
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{module.title}</h3>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {module.lessons_count || moduleLessons.length} leçons • {module.estimated_hours || 0}h
-                            </p>
-                          </div>
-                        </div>
-                        <FiChevronRight 
-                          className={`transform transition-transform ${
-                            isExpanded ? 'rotate-90' : ''
-                          }`} 
-                        />
-                      </button>
-                      
-                      {isExpanded && moduleLessons.length > 0 && (
-                        <div className="border-t border-gray-200 p-4 bg-white">
-                          {moduleLessons
-                            .sort((a: any, b: any) => a.lesson_number - b.lesson_number)
-                            .map((lesson: any) => (
-                              <div key={lesson.id} className="flex items-center py-3 border-b border-gray-100 last:border-b-0">
-                                <div className="flex items-center flex-1">
-                                  {lesson.is_completed ? (
-                                    <FiCheckCircle className="text-green-500 mr-3" size={18} />
-                                  ) : (
-                                    <FiPlayCircle className="text-gray-400 mr-3" size={18} />
-                                  )}
-                                  <div>
-                                    <div className="font-medium text-gray-900 flex items-center gap-2">
-                                      {lesson.lesson_number}. {lesson.title}
-                                      {lesson.has_quiz && (
-                                        <MdOutlineQuiz className="text-yellow-500" size={14} title="Contient un quiz" />
-                                      )}
-                                    </div>
-                                    {lesson.description && (
-                                      <p className="text-sm text-gray-600 mt-1">{lesson.description}</p>
+                 <div className="bg-white rounded-lg shadow">
+                              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                                <div>
+                                  <h2 className="text-xl font-semibold text-gray-900">Modules et leçons</h2>
+                                  <p className="text-gray-600 mt-1">
+                                    {isLoadingModules ? (
+                                      <span className="inline-flex items-center">
+                                        <FiLoader className="animate-spin mr-2" size={14} />
+                                        Chargement des modules...
+                                      </span>
+                                    ) : (
+                                      `${modules.length} modules • ${totalLessons} leçons • ${progress}% complété`
                                     )}
-                                  </div>
+                                  </p>
                                 </div>
-                                {lesson.duration_minutes && (
-                                  <span className="text-sm text-gray-500 ml-4">
-                                    {lesson.duration_minutes} min
-                                  </span>
+                              
+                              </div>
+                
+                              {/* Liste des modules */}
+                              <div className="divide-y divide-gray-200">
+                                {isLoadingModules ? (
+                                  <div className="p-8 text-center">
+                                    <FiLoader className="mx-auto animate-spin text-blue-600 mb-4" size={32} />
+                                    <p className="text-gray-600">Chargement des modules...</p>
+                                  </div>
+                                ) : modulesError ? (
+                                  <div className="p-8 text-center">
+                                    <div className="text-red-500 mb-4">❌</div>
+                                    <h3 className="text-lg font-medium text-gray-900 mb-2">Erreur de chargement</h3>
+                                    <p className="text-gray-600 mb-4">
+                                      Impossible de charger les modules. 
+                                      <button 
+                                        onClick={() => refetchModules()}
+                                        className="ml-2 text-blue-600 hover:text-blue-800"
+                                      >
+                                        Réessayer
+                                      </button>
+                                    </p>
+                                  </div>
+                                ) : modules.length === 0 ? (
+                                  <div className="p-8 text-center">
+                                    <FiBookOpen className="mx-auto text-gray-400 mb-4" size={48} />
+                                    <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun module</h3>
+                                    
+                          
+                                  </div>
+                                ) : (
+                                  modules.sort((a, b) => a.order - b.order).map((module) => {
+                                    const isExpanded = expandedModules.has(module.id);
+                                    // Calculer la progression du module
+                                    const moduleLessons = module.lessons || [];
+                                    const moduleCompletedLessons = moduleLessons.filter(l => l.is_completed).length;
+                                    const moduleProgress = moduleLessons.length > 0 
+                                      ? Math.round((moduleCompletedLessons / moduleLessons.length) * 100) 
+                                      : 0;
+                
+                                    const sortedLessons = [...moduleLessons].sort((a, b) => a.lesson_number - b.lesson_number);
+                
+                                    return (
+                                      <div key={module.id} className="transition-colors hover:bg-gray-50">
+                                        <ModuleLessonsLoader moduleId={module.id} isExpanded={isExpanded} />
+                                        {/* En-tête du module */}
+                                        <div className="p-6">
+                                          <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-start gap-4 flex-1">
+                                              <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                                <span className="text-blue-600 font-bold">{module.order}</span>
+                                              </div>
+                                              <div className="flex-1">
+                                                <div className="flex items-center justify-between">
+                                                  <div>
+                                                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                                                      {module.title}
+                                                    </h3>
+                                                    {module.description && (
+                                                      <p className="text-gray-600 text-sm">{module.description}</p>
+                                                    )}
+                                                  </div>
+                                                  <button
+                                                    onClick={() => toggleModule(module.id)}
+                                                    className="text-gray-400 hover:text-gray-600 ml-4"
+                                                    title={isExpanded ? "Réduire" : "Développer"}
+                                                  >
+                                                    {isExpanded ? <FiChevronUp size={24} /> : <FiChevronDown size={24} />}
+                                                  </button>
+                                                </div>
+                                                
+                                                {/* Métadonnées du module */}
+                                                <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                                                  <span className="flex items-center gap-1">
+                                                    <FiBookOpen size={14} />
+                                                    {module.lessons_count || moduleLessons.length} leçons
+                                                  </span>
+                                                  <span>{module.total_points} points</span>
+                                                  {module.estimated_hours && (
+                                                    <span className="flex items-center gap-1">
+                                                      <FiClock size={14} />
+                                                      {module.estimated_hours}h
+                                                    </span>
+                                                  )}
+                                                  {moduleLessons.length > 0 && (
+                                                    <div className="flex items-center gap-2">
+                                                      <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                                                        <div 
+                                                          className="bg-green-600 h-1.5 rounded-full transition-all duration-300"
+                                                          style={{ width: `${moduleProgress}%` }}
+                                                        ></div>
+                                                      </div>
+                                                      <span>{moduleProgress}%</span>
+                                                    </div>
+                                                  )}
+                                                  <span className="text-xs text-gray-400">
+                                                    Créé le {formatDate(module.created_at)}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                
+                              
+                
+                                          {/* Leçons du module (déroulées) */}
+                                          {isExpanded && (
+                                            <div className="mt-6 ml-16 space-y-3">
+                                              {moduleLessons.length === 0 ? (
+                                                <div className="p-4 text-center border border-gray-200 rounded-lg">
+                                                  <p className="text-gray-500">Aucune leçon dans ce module.</p>
+                                                  
+                                                </div>
+                                              ) : (
+                                                sortedLessons.map((lesson) => (
+                                                    <div
+                                                      key={lesson.id}
+                                                      onClick={() => handleLessonClick(lesson.id, module.id)}
+                                                      className="group p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all"
+                                                    >
+                                                      <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                          <div className="flex-shrink-0">
+                                                            {lesson.is_completed ? (
+                                                              <FiCheckCircle className="text-green-500" size={20} />
+                                                            ) : (
+                                                              <FiPlayCircle className="text-gray-400 group-hover:text-blue-500" size={20} />
+                                                            )}
+                                                          </div>
+                                                          <div>
+                                                            <div className="flex items-center gap-2">
+                                                              <h4 className="font-medium text-gray-900 group-hover:text-blue-600">
+                                                                {lesson.lesson_number}. {lesson.title}
+                                                              </h4>
+                                                              {lesson.has_quiz && (
+                                                                <MdOutlineQuiz className="text-yellow-500" size={16} title="Contient un quiz" />
+                                                              )}
+                                                              {/* {!lesson.is_published && (
+                                                                <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-800 rounded">
+                                                                  Brouillon
+                                                                </span>
+                                                              )} */}
+                                                            </div>
+                                                            {lesson.description && (
+                                                              <p className="text-sm text-gray-600 mt-1">{lesson.description}</p>
+                                                            )}
+                                                            <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                                                              {/* {lesson.duration_minutes && (
+                                                                <span>{lesson.duration_minutes} min</span>
+                                                              )} */}
+                                                              <span>Créé le {formatDate(lesson.created_at)}</span>
+                                                            </div>
+                                                          </div>
+                                                        </div>
+                                                        <div className="text-gray-400 group-hover:text-gray-600">
+                                                          <FiChevronRight />
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  ))
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })
                                 )}
                               </div>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                            </div>
               </div>
               
               {/* Statistiques du cours */}

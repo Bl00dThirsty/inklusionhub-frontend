@@ -26,6 +26,7 @@ interface LessonFormData {
   quiz_points?: number;
   quiz_pass_percentage?: number;
   is_free_preview: boolean;
+  attachments?: any[];
   difficulty: 'debutant' | 'intermediaire' | 'avance';
 }
 
@@ -57,6 +58,7 @@ const LessonForm = ({ moduleId, lesson = null, onSuccess }: LessonFormProps) => 
       quiz_pass_percentage: lesson.quiz_pass_percentage,
       is_free_preview: lesson.is_free_preview,
       difficulty: lesson.difficulty,
+      attachments: lesson.attachments || [], 
     } : {
       lesson_number: 1,
       content_type: 'mixed',

@@ -54,8 +54,9 @@ export interface Module {
   total_points: number;
   estimated_hours: number;
   image?: string;
-  lesson_count: number;
+  lesson_count?: number;
   created_at: string;
+  
 }
 
 export interface Lesson {
@@ -76,11 +77,13 @@ export interface Lesson {
   quiz_pass_percentage: number;
   is_free_preview: boolean;
   difficulty: string;
-  attachments: any[];
+  is_completed: boolean;
+  attachments?: any[];
   created_at: string;
 }
 
 export interface Quiz {
+  length: number;
   id: string;
   lesson_id: string;
   title: string;
@@ -91,11 +94,12 @@ export interface Quiz {
   points_available: number;
   question_count: number;
   randomize_questions: boolean;
+  created_at: string;
 }
 
 export interface Question {
   id: string;
-  quiz_id: string;
+  quiz: string;
   text: string;
   media_url: string;
   media_type: 'gif' | 'video';
@@ -270,7 +274,9 @@ export const learningApi = createApi({
     "Lesson", 
     "Enrollments",
     "Progress",
-    "Certificates"
+    "Certificates",
+    "Quiz",
+    "Question"
   ],
   endpoints: (build) => ({
     // =================== COURSES ===================
@@ -435,6 +441,30 @@ export const learningApi = createApi({
       invalidatesTags: (result, error, { id }) => [{ type: "Lesson", id }],
     }),
 
+    getLessonById: build.query<Lesson, string>({
+      query: (lessonId) => `api/manage/lessons/${lessonId}/`,
+      providesTags: (result, error, lessonId) => [{ type: 'Lesson', id: lessonId }],
+    }),
+
+    completeLesson: build.mutation<any, { lessonId: string; courseId: string }>({
+      query: ({ lessonId, courseId }) => ({
+        url: `api/learner/courses/${courseId}/lessons/${lessonId}/complete/`,
+        method: 'POST',
+      }),
+      // invalidatesTags: (result, error, { lessonId, courseId }) => [
+      //   { type: 'Lesson', id: lessonId },
+      //   { type: 'CourseProgress', id: courseId },
+      // ],
+    }),
+
+    markLessonInProgress: build.mutation<any, { lessonId: string; courseId: string }>({
+      query: ({ lessonId, courseId }) => ({
+        url: `api/learner/courses/${courseId}/lessons/${lessonId}/progress/`,
+        method: 'POST',
+        body: { status: 'in_progress' },
+      }),
+    }),
+
     deleteLesson: build.mutation<void, { id: string; moduleId: string }>({
       query: ({ id }) => ({
         url: `api/manage/lessons/${id}/`,
@@ -463,11 +493,99 @@ export const learningApi = createApi({
         { type: "Lesson", id: lesson_id },
       ],
     }),
+    
+    getQuizById: build.query<Quiz, string>({
+      query: (id) => `api/manage/quiz/${id}/`,
+      providesTags: (result, error, id) => [{ type: "Quiz", id }],
+    }),
+
+    updateQuiz: build.mutation<Quiz, { id: string; data: Partial<Quiz> }>({
+      query: ({ id, data }) => ({
+        url: `api/manage/quiz/${id}/`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: "Quiz", id }],
+    }),
+
+    deleteQuiz: build.mutation<void, string>({
+      query: (id) => ({
+        url: `api/manage/quiz/${id}/`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (result, error, id) => [{ type: "Quiz", id }],
+    }),
+
+    // =================== QUESTIONS ===================
+getQuizQuestions: build.query<Question[], string>({
+  query: (quizId) => `api/manage/questions/?quiz=${quizId}`,
+  providesTags: (result, error, quizId) => [{ type: "Quiz", id: quizId }],
+}),
+
+createQuestion: build.mutation<Question, any>({
+  query: (data) => ({
+    url: 'api/manage/questions/',
+    method: 'POST',
+    body: data,
+  }),
+  transformErrorResponse: (response) => {
+    console.error("Erreur création question:", response);
+    return response;
+  },
+  invalidatesTags: (result, error, { quiz }) => [
+    { type: "Quiz", id: quiz },
+  ],
+}),
+
+updateQuestion: build.mutation<Question, { id: string; data: any }>({
+  query: ({ id, data }) => ({
+    url: `api/manage/questions/${id}/`,
+    method: 'PUT',
+    body: data,
+  }),
+  invalidatesTags: (result, error, { id }) => [{ type: "Question", id }],
+}),
+
+deleteQuestion: build.mutation<void, string>({
+  query: (id) => ({
+    url: `api/manage/questions/${id}/`,
+    method: 'DELETE',
+  }),
+  invalidatesTags: (result, error, id) => [{ type: "Question", id }],
+}),
+
+// =================== CHOICES ===================
+getQuestionChoices: build.query<Choice[], string>({
+  query: (questionId) => `api/manage/choices/?question=${questionId}`,
+}),
+
+createChoice: build.mutation<Choice, any>({
+  query: (data) => ({
+    url: 'api/manage/choices/',
+    method: 'POST',
+    body: data,
+  }),
+}),
+
+updateChoice: build.mutation<Choice, { id: string; data: any }>({
+  query: ({ id, data }) => ({
+    url: `api/manage/choices/${id}/`,
+    method: 'PUT',
+    body: data,
+  }),
+}),
+
+deleteChoice: build.mutation<void, string>({
+  query: (id) => ({
+    url: `api/manage/choices/${id}/`,
+    method: 'DELETE',
+  }),
+}),
 
     // =================== APPRENANT ===================
     enrollCourse: build.mutation<Enrollment, EnrollCourseRequest>({
       query: ({ course_slug }) => ({
-        url: `api/courses/${course_slug}/enroll/`,
+        url: `api/enroll/${course_slug}/`,
         method: 'POST',
       }),
       invalidatesTags: ["Enrollments"],
@@ -483,6 +601,7 @@ export const learningApi = createApi({
       query: () => 'api/learner/dashboard/',
       providesTags: ["Enrollments"],
     }),
+
 
     //     # GET /api/learner/courses/<course_slug>/ - Détail cours (pour apprenant inscrit)
     // path('learner/courses/<slug:course_slug>/', 
@@ -516,7 +635,7 @@ export const learningApi = createApi({
     }),
 
 
-    getQuizQuestions: build.query<{
+    getQuizQuestionsLearner: build.query<{
       quiz: any;
       questions: Question[];
       current_attempt: number;
@@ -623,19 +742,37 @@ export const {
   // Lessons
   useGetModuleLessonsQuery,
   useCreateLessonMutation,
+  useGetLessonByIdQuery,
   useUpdateLessonMutation,
   useDeleteLessonMutation,
+  useCompleteLessonMutation,
+  useMarkLessonInProgressMutation,
   
   // Quiz
   useGetLessonQuizQuery,
   useCreateQuizMutation,
-  
+  useGetQuizByIdQuery,
+  useUpdateQuizMutation,
+  useDeleteQuizMutation,
+ 
+  // Questions
+  useGetQuizQuestionsQuery,
+  useCreateQuestionMutation,
+  useUpdateQuestionMutation,
+  useDeleteQuestionMutation,
+   
+  // Choices
+  useGetQuestionChoicesQuery,
+  useCreateChoiceMutation,
+  useUpdateChoiceMutation,
+  useDeleteChoiceMutation,
+
   // Apprenant
   useEnrollCourseMutation,
   useGetMyEnrollmentsQuery,
   useGetCourseProgressQuery,
   useGetLessonContentQuery,
-  useGetQuizQuestionsQuery,
+  useGetQuizQuestionsLearnerQuery,
   useSubmitQuizMutation,
   useGetCertificateQuery,
   useGenerateCertificateMutation,

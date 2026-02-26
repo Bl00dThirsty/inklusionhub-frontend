@@ -41,13 +41,24 @@ interface Module {
 
 interface Lesson {
   id: string;
+  module: string;
   title: string;
   description: string;
   lesson_number: number;
-  duration_minutes: number;
-  is_published: boolean;
+  content_type: 'video' | 'text' | 'interactive' | 'mixed';
+  video_url?: string;
+  video_duration: number;
+  text_content?: string;
+  has_subtitles: boolean;
+  has_lsf_translation: boolean;
+  lsf_video_url?: string;
   has_quiz: boolean;
-  is_completed?: boolean;
+  quiz_points: number;
+  quiz_pass_percentage: number;
+  is_free_preview: boolean;
+  difficulty: string;
+  is_completed: boolean;
+  attachments?: any[];
   created_at: string;
 }
 
@@ -55,7 +66,8 @@ const CourseDetailPage = () => {
   const { courseId } = useParams()  as { courseId:string }; // Changé de 'slug' à 'courseId'
   const router = useRouter();
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
-
+   // État pour stocker les leçons de chaque module
+  const [moduleLessons, setModuleLessons] = useState<Record<string, Lesson[]>>({});
   const { 
           data: apiUserData, 
           isLoading:authLoading, 
@@ -93,44 +105,59 @@ const {
   //DELETE
     const [deleteCourse] = useDeleteCourseMutation();
 
-
-  // Données simulées pour les modules (à remplacer par votre API)
-//   const modules: Module[] = [
-//     {
-//       id: '1',
-//       title: 'Introduction à la LSF',
-//       description: 'Découverte des bases de la Langue des Signes Française',
-//       order: 1,
-//       total_points: 100,
-//       lessons_count: 5,
-//       lessons: [
-//         { id: '1', title: 'Histoire de la LSF', description: 'Origines et développement', lesson_number: 1, duration_minutes: 15, is_published: true, has_quiz: false, is_completed: true },
-//         { id: '2', title: 'Alphabet manuel', description: 'Apprendre à signer les lettres', lesson_number: 2, duration_minutes: 25, is_published: true, has_quiz: true, is_completed: true },
-//         { id: '3', title: 'Les nombres', description: 'Compter de 0 à 100', lesson_number: 3, duration_minutes: 20, is_published: true, has_quiz: false },
-//         { id: '4', title: 'Se présenter', description: 'Dire son nom, son âge', lesson_number: 4, duration_minutes: 30, is_published: true, has_quiz: true },
-//         { id: '5', title: 'Exercice pratique', description: 'Mise en situation', lesson_number: 5, duration_minutes: 40, is_published: true, has_quiz: true },
-//       ]
-//     },
-//     {
-//       id: '2',
-//       title: 'Communication quotidienne',
-//       description: 'Signes essentiels pour la vie de tous les jours',
-//       order: 2,
-//       total_points: 150,
-//       lessons_count: 6,
-//       lessons: [
-//         { id: '6', title: 'La famille', description: 'Signes des membres de la famille', lesson_number: 1, duration_minutes: 20, is_published: true, has_quiz: false },
-//         { id: '7', title: 'Les émotions', description: 'Exprimer ses sentiments', lesson_number: 2, duration_minutes: 25, is_published: true, has_quiz: true },
-//       ]
-//     }
-//   ];
-
     // Utilisez les données réelles de l'API et transformez-les pour correspondre à l'interface Module
   const modules: Module[] = (modulesData || []).map((apiModule: any) => ({
     ...apiModule,
-    lessons_count: apiModule.lessons_count ?? apiModule.lessons?.length ?? 0,
-    lessons: apiModule.lessons || [],
+    lessons_count: apiModule.lessons_count ?? moduleLessons[apiModule.id]?.length ?? 0,
+    lessons: moduleLessons[apiModule.id] || [],
   }));
+
+   // Hook pour charger les leçons quand un module est expandé
+  const ModuleLessonsLoader = ({ moduleId, isExpanded }: { moduleId: string, isExpanded: boolean }) => {
+    const { data: lessons, isLoading } = useGetModuleLessonsQuery(moduleId, {
+      skip: !isExpanded, // Ne charger que si le module est expandé
+    });
+
+    useEffect(() => {
+  if (!isExpanded || !lessons) return;
+
+  setModuleLessons((prev) => {
+    // 🔍 Compare pour éviter la boucle
+    const current = prev[moduleId];
+    const isSame =
+      current &&
+      Array.isArray(current) &&
+      current.length === lessons.length &&
+      current.every((l, i) => l.id === lessons[i].id);
+
+    // Si les leçons n’ont pas réellement changé, on ne met pas à jour
+    if (isSame) return prev;
+
+    return { ...prev, [moduleId]: lessons };
+  });
+}, [lessons, moduleId, isExpanded]);
+
+    if (isLoading && isExpanded) {
+      return (
+        <div className="mt-2 ml-16 text-gray-500 flex items-center gap-2">
+          <FiLoader className="animate-spin" size={16} />
+          <span className="text-sm">Chargement des leçons...</span>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+   // Fonction pour rafraîchir les leçons d'un module
+  const refreshModuleLessons = (moduleId: string) => {
+    // Invalider le cache pour ce module
+    setModuleLessons(prev => {
+      const newState = { ...prev };
+      delete newState[moduleId];
+      return newState;
+    });
+  };
   
   // Calculer la progression basée sur les données réelles
   const totalLessons = modules.reduce((acc, module) => acc + (module.lessons_count || 0), 0);
@@ -517,8 +544,11 @@ const {
                       ? Math.round((moduleCompletedLessons / moduleLessons.length) * 100) 
                       : 0;
 
+                    const sortedLessons = [...moduleLessons].sort((a, b) => a.lesson_number - b.lesson_number);
+
                     return (
                       <div key={module.id} className="transition-colors hover:bg-gray-50">
+                        <ModuleLessonsLoader moduleId={module.id} isExpanded={isExpanded} />
                         {/* En-tête du module */}
                         <div className="p-6">
                           <div className="flex items-center justify-between mb-4">
@@ -613,9 +643,7 @@ const {
                                   </button>
                                 </div>
                               ) : (
-                                moduleLessons
-                                  .sort((a, b) => a.lesson_number - b.lesson_number)
-                                  .map((lesson) => (
+                                sortedLessons.map((lesson) => (
                                     <div
                                       key={lesson.id}
                                       onClick={() => handleLessonClick(lesson.id, module.id)}
@@ -638,19 +666,19 @@ const {
                                               {lesson.has_quiz && (
                                                 <MdOutlineQuiz className="text-yellow-500" size={16} title="Contient un quiz" />
                                               )}
-                                              {!lesson.is_published && (
+                                              {/* {!lesson.is_published && (
                                                 <span className="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-800 rounded">
                                                   Brouillon
                                                 </span>
-                                              )}
+                                              )} */}
                                             </div>
                                             {lesson.description && (
                                               <p className="text-sm text-gray-600 mt-1">{lesson.description}</p>
                                             )}
                                             <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                                              {lesson.duration_minutes && (
+                                              {/* {lesson.duration_minutes && (
                                                 <span>{lesson.duration_minutes} min</span>
-                                              )}
+                                              )} */}
                                               <span>Créé le {formatDate(lesson.created_at)}</span>
                                             </div>
                                           </div>

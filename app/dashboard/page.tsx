@@ -175,7 +175,7 @@ export default function DashboardPage() {
         icon: <BookOpen className="h-6 w-6" />,
         color: 'bg-purple-200',
         action: 'Continuer',
-        link: '/formation/my-courses'
+        link: '/formation/'
       },
       {
         id: 4,

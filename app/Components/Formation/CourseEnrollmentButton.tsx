@@ -123,7 +123,7 @@ const CourseEnrollmentButton: React.FC<CourseEnrollmentButtonProps> = ({
 
 const handleContinueLearning = () => {
     router.push(`/formation/${course.id}/${course.slug}/`);
-  };
+};
 
   // Styles selon la variante
   const getButtonStyles = () => {

@@ -152,6 +152,7 @@ if (authLoading) {
   const handleSuccess = (newModule: any) => {
     // Redirection vers la page du cours
     router.push(`/formation/${courseId}`);
+    //router.push(`/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}/Quiz/create`);
   };
 
   return (
@@ -179,7 +180,7 @@ if (authLoading) {
             Retour au cours
           </button>
           <h1 className="text-2xl font-bold text-gray-900">
-            Ajouter une lecçon
+            Ajouter une leçon
           </h1>
           <p className="text-gray-600 mt-2">
             Remplissez le formulaire ci-dessous pour créer une nouvelle leçon.

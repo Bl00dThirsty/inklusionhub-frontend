@@ -386,13 +386,13 @@ const CourseListPage = () => {
                         <FiEye className="mr-2" />
                         Voir
                       </button>
-                      <button
+                      {/* <button
                         onClick={() => handleEditCourse(course.id)}
                         className="inline-flex items-center justify-center px-4 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
                       >
                         <FiEdit className="mr-2" />
                         Éditer
-                      </button>
+                      </button> */}
                     </div>
                   </div>
 

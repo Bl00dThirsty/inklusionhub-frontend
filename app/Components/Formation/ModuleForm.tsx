@@ -17,6 +17,8 @@ interface FormData {
   order: number;
   total_points: number;
   estimated_hours: number;
+  image?: File | null;
+  lesson_count?: number;
 }
 
 const ModuleForm = ({ courseId, module = null, onSuccess }: ModuleFormProps) => {
@@ -39,6 +41,7 @@ const ModuleForm = ({ courseId, module = null, onSuccess }: ModuleFormProps) => 
       order: module.order || 1,
       total_points: module.total_points || 100,
       estimated_hours: module.estimated_hours || 2,
+      lesson_count: module.lesson_count || 0,
     } : {
       title: '',
       subtitle: '',

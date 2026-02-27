@@ -2,13 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import CommunicationLayout from "./Chat/ComLayout";
-import ConversationList from "./Chat/ConversationList";
-import ChatLayout from "./Chat/ChatLayout";
-import FileHistory from "./History/FileHistory";
-import DashboardHeader from "@/app/Components/DashboardHeader";
-import Footer from "@/app/Components/Footer";
 import { useGetCurrentUserQuery } from "@/state/api";
+import CommunicationLayout from "./Chat/ComLayout";
+import ChatLayout from "./Chat/ChatLayout";
+import DashboardHeader from "@/app/Components/DashboardHeader";
+import Footer from "@/app/Components/Footer"
 
 interface Profile {
   name: string;
@@ -81,14 +79,14 @@ export default function CommunicationPage() {
   if (!currentUser) return <p>Chargement...</p>; // éviter le rendu avant récupération
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* Header */}
+    <div className="flex flex-col h-screen overflow-auto bg-gray-50">
+      {/* Header 
       <DashboardHeader
         userName={`${profile.name} ${getInitials(profile.forename)}`}
         userRole={profile.role}
         userEmail={profile.email}
         userAvatar={getAvatarUrl(profile.avatar)}
-      />
+      />*/}
 
       {/* Layout communication */}
       <CommunicationLayout>
@@ -98,8 +96,8 @@ export default function CommunicationPage() {
         </div>
       </CommunicationLayout>
 
-      {/* Footer */}
-      <Footer />
+      {/* Footer 
+      <Footer />*/}
     </div>
   );
 }

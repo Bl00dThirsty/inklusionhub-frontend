@@ -10,11 +10,24 @@ export interface User {
 export interface Message {
   id: string;
   content: string;
+  type: 'text' | 'image' | 'file' | 'voice' | 'call-audio' | 'call-video';
+  call: any;
+  conversation_id: string | null;
+
   file: string | null;
   image: string | null;
    // snake_case (API)
   file_name?: string;
   file_size?: number;
+  voice?: {
+    audio: string;
+    duration: number;
+  };
+   call_type?: 'audio' | 'video';
+  call_status?: 'ringing' | 'ongoing' | 'ended' | 'missed';
+  call_duration?: number;
+  created_at: string;
+  updated_at: string;
 
   // camelCase (WS / frontend)
   fileName?: string;
@@ -31,11 +44,19 @@ export interface Conversation {
   id: string;
   participants: User[];
   last_message?: {
+    read: any;
+    file_name: string;
+    sender_id: string;
     content: string;
+    type: "text" | "image" | "file" | "voice" | "call-audio" | "call-video";
+    fileName?: string;
+    created_at: string;
     sender: string;
     timestamp: string;
   };
+  avatar: string;
   unread_count: number;
+  updatedAt: string;
 }
 export interface ConversationFile {
   id: string;
@@ -72,6 +93,18 @@ export const chatApi = createApi({
           : [{ type: "Conversations", id: "LIST" }],
     }),
 
+    // Liste des messages d'une conversation
+    getMessages: builder.query<Message[], string>({
+      query: (conversationId) => `/conversations/${conversationId}/messages/`,
+      providesTags: (result, _error, conversationId) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: "Messages" as const, id })),
+              { type: "Messages", id: conversationId },
+            ]
+          : [{ type: "Messages", id: conversationId }],
+    }),
+
     // Créer ou récupérer une conversation avec un utilisateur
     createOrGetConversation: builder.mutation<{ id: string }, { userId: string }>({
       query: ({ userId }) => ({
@@ -88,33 +121,22 @@ export const chatApi = createApi({
       providesTags: ["Users"],
     }),
 
-    // Liste des messages d'une conversation
-    getMessages: builder.query<Message[], string>({
-      query: (conversationId) => `/conversations/${conversationId}/messages/`,
-      providesTags: (result, _error, conversationId) =>
-        result
-          ? [
-              ...result.map(({ id }) => ({ type: "Messages" as const, id })),
-              { type: "Messages", id: conversationId },
-            ]
-          : [{ type: "Messages", id: conversationId }],
-    }),
-
     // Envoyer un message
     sendMessage: builder.mutation<
-          Message,
-          { conversationId: string; formData: FormData }
+        Message,
+        { conversationId: string; formData: FormData }
       >({
         query: ({ conversationId, formData }) => ({
-          url: `/conversations/${conversationId}/messages/list-create/`, 
+          url: `/conversations/${conversationId}/messages/list-create/`,
           method: "POST",
           body: formData,
         }),
         invalidatesTags: (_result, _error, { conversationId }) => [
-          { type: "Messages", id: conversationId },
-          { type: "Conversations", id: conversationId },
+          { type: "Messages", id: conversationId },       // rafraîchit les messages
+          { type: "Conversations", id: "LIST" },        // ⚡ rafraîchit la liste des conversations
         ],
       }),
+
 
 
 
@@ -127,7 +149,7 @@ export const chatApi = createApi({
       invalidatesTags: ["Messages"],
     }),
 
-    /* ---------- 🔍 Recherche utilisateurs (WhatsApp) ---------- */
+    /* ----------  Recherche utilisateurs (WhatsApp) ---------- */
     searchUsers: builder.query<
   { results: User[]; next: string | null; previous: string | null; count: number },
   { q: string; page?: number }

@@ -56,7 +56,7 @@ export default function UserSearchDrawer({
 
   return (
     <div className="fixed inset-0 z-50 bg-white flex flex-col">
-      <div className="p-4 border-b flex items-center gap-2">
+      <div className="p-4 border-b flex items-center gap-2 te text-gray-800">
         <Search size={18} />
         <input
           className="flex-1 outline-none"

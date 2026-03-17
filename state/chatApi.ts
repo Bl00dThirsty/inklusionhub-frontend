@@ -148,6 +148,8 @@ export const chatApi = createApi({
       }),
       invalidatesTags: ["Messages"],
     }),
+     
+    
 
     /* ----------  Recherche utilisateurs (WhatsApp) ---------- */
     searchUsers: builder.query<

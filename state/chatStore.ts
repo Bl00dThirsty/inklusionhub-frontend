@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { Conversation, Message } from "@/state/chatApi"; 
@@ -12,28 +11,33 @@ export interface AppNotification {
   timestamp: string;
   conversation_id?: string;
 }
+
 interface ChatStore {
+  setMessageDelivered: (convId: string, messageId: string) => void;
   setMessagesForConv(convId: string, messages: Message[], replace?: boolean): void;
   conversations: Conversation[];
   messagesByConv: Record<string, ChatMessageWS[]>;
   activeConversationId: string | null;
   notifications: AppNotification[];
+  hasMoreByConv: Record<string, boolean>;
+  loadingMoreByConv: Record<string, boolean>;
   addNotification: (notif: AppNotification) => void;
   applyIncomingNotification: (notif: AppNotification, currentUserId: string) => void;
   clearNotifications: () => void;
-  // Actions
   setConversations: (convs: Conversation[]) => void;
   setActiveConversation: (id: string | null) => void;
   clearMessages: (convId: string) => void;
-
+  prependMessages: (convId: string, messages: ChatMessageWS[]) => void;
   updateConversation: (convId: string, updater: (conv: Conversation) => Conversation) => void;
   addMessage: (msg: ChatMessageWS, currentUserId: string) => void;
   markAsRead: (convId: string) => void;
   setMessageRead: (convId: string, messageId: string) => void;
   clearOldMessages: (convId: string, limit?: number) => void;
+  setHasMore: (convId: string, hasMore: boolean) => void;
+  setLoadingMore: (convId: string, loading: boolean) => void;
 }
 
-const MAX_MESSAGES_PER_CONV = 50; // Limite pour le LocalStorage
+const MAX_MESSAGES_PER_CONV = 200;
 
 type ConversationMessageType = NonNullable<Conversation["last_message"]>["type"];
 
@@ -63,117 +67,72 @@ const resolvePreviewFromNotification = (data: any): string => {
 export const useChatStore = create<ChatStore>()(
   persist(
     (set, get) => ({
+      // ─── State initial ────────────────────────────────
       conversations: [],
       messagesByConv: {},
+      activeConversationId: null,
+      notifications: [],
+      hasMoreByConv: {},
+      loadingMoreByConv: {},
 
-       activeConversationId: null, 
+      // ─── Conversations ────────────────────────────────
+      setActiveConversation: (id) => set({ activeConversationId: id }),
 
-       
-
-  setActiveConversation: (id) => set({ activeConversationId: id }),
-
-      // Initialise ou écrase la liste des conversations (ex: après un fetch API)
       setConversations: (convs) => set({ conversations: convs }),
 
-      // Cette fonction permet de remplir le store avec les messages venant de ton API (RTK Query)
-setMessagesForConv: (convId, messages, replace = false) =>
-  set((state) => {
-    const formattedApiMessages = (messages as any[]).map((msg) => ({
-      id: msg.id,
-      content: msg.content || "",
-      sender: typeof msg.sender === 'object'
-        ? msg.sender
-        : { id: msg.sender_id || msg.sender, name: "Utilisateur" },
-      timestamp: msg.timestamp || msg.created_at || new Date().toISOString(),
-      conversation_id: convId,
-      read: !!msg.read || !!msg.read_at,
-      image: msg.image,
-      file: msg.file,
-      voice: msg.voice,
-    })) as ChatMessageWS[];
+      setMessagesForConv: (convId, messages, replace = false) =>
+        set((state) => {
+          const formattedApiMessages = (messages as any[]).map((msg) => ({
+            id: msg.id,
+            content: msg.content || "",
+            is_delivered: !!msg.is_delivered,
+            fileName: msg.fileName ?? msg.file_name ?? null,
+            fileSize: msg.fileSize ?? msg.file_size ?? null,
+            sender: typeof msg.sender === 'object'
+              ? msg.sender
+              : { id: msg.sender_id || msg.sender, name: "Utilisateur" },
+            timestamp: msg.timestamp || msg.created_at || new Date().toISOString(),
+            conversation_id: convId,
+            read: !!msg.read || !!msg.read_at,
+            image: msg.image ?? null,
+            file: msg.file ?? null,
+            voice: msg.voice ?? null,
+          })) as ChatMessageWS[];
 
-    const existingMessages = state.messagesByConv[convId] || [];
+          const existingMessages = state.messagesByConv[convId] || [];
 
-    // ✅ Anti-boucle : si les IDs sont identiques, on ne set rien
-    const existingIds = existingMessages.map(m => m.id).sort().join(",");
-    const newIds = formattedApiMessages.map(m => m.id).sort().join(",");
-    if (existingIds === newIds && replace) return state; // ← retourne le même state = pas de re-render
+          // Anti-boucle : si les IDs sont identiques, pas de re-render
+          const existingIds = existingMessages.map(m => m.id).sort().join(",");
+          const newIds = formattedApiMessages.map(m => m.id).sort().join(",");
+          if (existingIds === newIds && replace) return state;
 
-    const existingWSMessages = replace
-      ? []
-      : existingMessages.filter(
-          localMsg => !formattedApiMessages.some(m => m.id === localMsg.id)
-        );
+          const existingWSMessages = replace
+            ? []
+            : existingMessages.filter(
+                localMsg => !formattedApiMessages.some(m => m.id === localMsg.id)
+              );
 
-    const merged = [...formattedApiMessages, ...existingWSMessages].sort(
-      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
+          const merged = [...formattedApiMessages, ...existingWSMessages].sort(
+            (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          );
 
-    return {
-      messagesByConv: {
-        ...state.messagesByConv,
-        [convId]: merged,
-      },
-    };
-  }),
+          return {
+            messagesByConv: {
+              ...state.messagesByConv,
+              [convId]: merged,
+            },
+          };
+        }),
 
-  notifications: [],
+      // ─── Notifications ────────────────────────────────
+      addNotification: (notif) =>
+        set((state) => ({
+          notifications: [notif, ...state.notifications].slice(0, 50)
+        })),
 
-addNotification: (notif) =>
-  set((state) => ({
-    notifications: [notif, ...state.notifications].slice(0, 50) // garde 50 max
-  })),
+      clearNotifications: () => set({ notifications: [] }),
 
-applyIncomingNotification: (notif, currentUserId) =>
-  set((state) => {
-    const convId = notif.conversation_id;
-    if (notif.type !== "new_message" || !convId) return state;
-
-    const senderId = notif.data?.sender?.id ?? notif.data?.sender_id ?? "";
-    const senderName =
-      notif.data?.sender?.name ??
-      notif.data?.sender_name ??
-      "Utilisateur";
-    const timestamp = notif.data?.timestamp ?? notif.timestamp ?? new Date().toISOString();
-    const preview = resolvePreviewFromNotification(notif.data);
-    const messageType = resolveMessageTypeFromNotification(notif.data);
-
-    let hasTargetConversation = false;
-
-    const updatedConversations = state.conversations.map((conversation) => {
-      if (conversation.id !== convId) return conversation;
-
-      hasTargetConversation = true;
-      const isOwn = senderId === currentUserId;
-      const isActive = state.activeConversationId === convId;
-
-      return {
-        ...conversation,
-        unread_count:
-          !isOwn && !isActive
-            ? (conversation.unread_count ?? 0) + 1
-            : conversation.unread_count ?? 0,
-        last_message: {
-          ...(conversation.last_message ?? {}),
-          content: preview || conversation.last_message?.content || "",
-          sender: senderName,
-          sender_id: senderId || conversation.last_message?.sender_id || "",
-          timestamp,
-          created_at: timestamp,
-          type: messageType,
-          file_name: conversation.last_message?.file_name ?? "",
-          read: isOwn || isActive,
-        } as any,
-      };
-    });
-
-    if (!hasTargetConversation) return state;
-
-    return { conversations: updatedConversations };
-  }),
-
-clearNotifications: () => set({ notifications: [] }),
-      // Met à jour une conversation spécifique (ex: changer le nom, l'avatar)
+      // ─── Conversations helpers ────────────────────────
       updateConversation: (convId, updater) =>
         set((state) => ({
           conversations: state.conversations.map((c) =>
@@ -181,78 +140,81 @@ clearNotifications: () => set({ notifications: [] }),
           ),
         })),
 
-     // ACTION PRINCIPALE : Appelée par le WebSocket
+      // ─── Messages ─────────────────────────────────────
       addMessage: (msg, currentUserId) => {
-  const convId = msg.conversation_id;
-  if (!convId) return;
+        const convId = msg.conversation_id;
+        if (!convId) return;
 
-  set((state): Partial<ChatStore> => {
-    const existingMessages = state.messagesByConv[convId] || [];
+        set((state): Partial<ChatStore> => {
+          const existingMessages = state.messagesByConv[convId] || [];
+          const isActive = state.activeConversationId === convId;
+          const isOwn = msg.sender.id === currentUserId;
 
-    const isActive = state.activeConversationId === convId; 
-    const isOwn = msg.sender.id === currentUserId;          
+          // Anti-doublon : si message existe, mettre à jour le statut
+          if (existingMessages.some((m) => m.id === msg.id)) {
+            return {
+              messagesByConv: {
+                ...state.messagesByConv,
+                [convId]: existingMessages.map(m =>
+                  m.id === msg.id
+                    ? {
+                        ...m,
+                        read: m.read || msg.read,
+                        is_delivered: m.is_delivered || msg.is_delivered,
+                      }
+                    : m
+                ),
+              },
+            };
+          }
 
-    //  anti doublon
-    if (existingMessages.some((m) => m.id === msg.id)) return state;
+          let newMessages = [...existingMessages, msg].sort(
+            (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          );
 
-    let newMessages = [...existingMessages, msg].sort(
-      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
+          if (newMessages.length > MAX_MESSAGES_PER_CONV) {
+            newMessages = newMessages.slice(-MAX_MESSAGES_PER_CONV);
+          }
 
-    if (newMessages.length > MAX_MESSAGES_PER_CONV) {
-      newMessages = newMessages.slice(-MAX_MESSAGES_PER_CONV);
-    }
+          const newConversations = state.conversations.map((c) => {
+            if (c.id !== convId) return c;
+            return {
+              ...c,
+              last_message: {
+                ...c.last_message,
+                content: msg.content,
+                sender: msg.sender.name,
+                sender_id: msg.sender.id,
+                timestamp: msg.timestamp,
+                created_at: msg.timestamp,
+                type: msg.image ? "image" : msg.file ? "file" : msg.voice ? "voice" : "text",
+                read: msg.read || false,
+              } as any,
+              unread_count: !isOwn && !isActive
+                ? (c.unread_count ?? 0) + 1
+                : c.unread_count ?? 0,
+            } as Conversation;
+          });
 
-    const newConversations = state.conversations.map((c) => {
-      if (c.id !== convId) return c;
+          return {
+            ...state,
+            conversations: newConversations,
+            messagesByConv: {
+              ...state.messagesByConv,
+              [convId]: newMessages,
+            },
+          };
+        });
+      },
 
-      return {
-        ...c,
-        last_message: {
-          ...c.last_message,
-          content: msg.content,
-          sender: msg.sender.name,
-          sender_id: msg.sender.id,
-          timestamp: msg.timestamp,
-          created_at: msg.timestamp,
-          type: msg.image
-            ? "image"
-            : msg.file
-            ? "file"
-            : msg.voice
-            ? "voice"
-            : "text",
-          read: msg.read || false,
-        } as any,
+      clearMessages: (convId) =>
+        set((state) => ({
+          messagesByConv: {
+            ...state.messagesByConv,
+            [convId]: []
+          }
+        })),
 
-        // LOGIQUE WHATSAPP 
-        unread_count:
-          !isOwn && !isActive
-            ? (c.unread_count ?? 0) + 1   
-            : c.unread_count ?? 0         
-      } as Conversation;
-    });
-
-    return {
-      ...state,
-      conversations: newConversations,
-      messagesByConv: {
-        ...state.messagesByConv,
-        [convId]: newMessages
-      }
-    };
-  });
-},
-
-// Dans l'implémentation :
-clearMessages: (convId: any) =>
-  set((state) => ({
-    messagesByConv: {
-      ...state.messagesByConv,
-      [convId]: []
-    }
-  })),
-      // Marque toute une conversation comme lue
       markAsRead: (convId) =>
         set((state) => ({
           conversations: state.conversations.map((c) =>
@@ -262,10 +224,8 @@ clearMessages: (convId: any) =>
             ...state.messagesByConv,
             [convId]: (state.messagesByConv[convId] || []).map((m) => ({ ...m, read: true })),
           },
-           //activeConversationId: convId 
         })),
 
-      // Accusé de réception pour un message précis
       setMessageRead: (convId, messageId) =>
         set((state) => ({
           messagesByConv: {
@@ -276,24 +236,61 @@ clearMessages: (convId: any) =>
           },
         })),
 
-      // Action manuelle pour vider les vieux messages si besoin
-      clearOldMessages: (convId, limit = MAX_MESSAGES_PER_CONV) => 
+      clearOldMessages: (convId, limit = MAX_MESSAGES_PER_CONV) =>
         set((state) => ({
           messagesByConv: {
             ...state.messagesByConv,
             [convId]: (state.messagesByConv[convId] || []).slice(-limit)
           }
-        }))
+        })),
+
+      // ─── Scroll infini ────────────────────────────────
+      prependMessages: (convId, messages) =>
+        set((state) => {
+          const existing = state.messagesByConv[convId] || [];
+          const existingIds = new Set(existing.map(m => m.id));
+          const newOnes = messages.filter(m => !existingIds.has(m.id));
+          const merged = [...newOnes, ...existing].sort(
+            (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          );
+          return {
+            messagesByConv: { ...state.messagesByConv, [convId]: merged },
+          };
+        }),
+
+      setHasMore: (convId, hasMore) =>
+        set((state) => ({
+          hasMoreByConv: { ...state.hasMoreByConv, [convId]: hasMore },
+        })),
+
+      setLoadingMore: (convId, loading) =>
+        set((state) => ({
+          loadingMoreByConv: { ...state.loadingMoreByConv, [convId]: loading },
+        })),
+
+      // ─── Statut livré ─────────────────────────────────
+      setMessageDelivered: (convId, messageId) =>
+        set((state) => ({
+          messagesByConv: {
+            ...state.messagesByConv,
+            [convId]: (state.messagesByConv[convId] || []).map((m) =>
+              m.id === messageId ? { ...m, is_delivered: true } : m
+            ),
+          },
+        })),
+
     }),
-    { 
-      name: "chat-storage", // Nom de la clé dans le localStorage
+    {
+      name: "chat-storage",
       storage: createJSONStorage(() => localStorage),
-       partialize: (state) => ({
-    // ✅ On persiste seulement ce qui est utile entre sessions
-    conversations: state.conversations,
-    messagesByConv: state.messagesByConv,
-    activeConversationId: state.activeConversationId,
-  }),
+      partialize: (state) => ({
+        conversations: state.conversations,
+        // Limite à 50 messages par conv pour ne pas dépasser 5MB localStorage
+        messagesByConv: Object.fromEntries(
+          Object.entries(state.messagesByConv).map(([k, v]) => [k, v.slice(-50)])
+        ),
+        activeConversationId: state.activeConversationId,
+      }),
     }
   )
 );

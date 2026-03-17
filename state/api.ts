@@ -37,6 +37,7 @@ export interface User {
   onboarding_completed?:boolean;
   onboarding_step?: number;
   preferences?: string[];
+ 
 
 }
 

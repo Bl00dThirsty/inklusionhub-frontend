@@ -348,18 +348,6 @@ export default function FormationsPage() {
           <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
             Rejoignez notre communauté d'apprenants et développez vos compétences dans un environnement 100% inclusif.
           </p>
-          {/*<div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:shadow-xl transition-all transform hover:scale-105 flex items-center justify-center">
-              <BookOpen className="w-6 h-6 mr-3" />
-              Explorer les formations
-            </button>
-            <button className="bg-white text-blue-600 border-2 border-blue-600 px-8 py-4 rounded-full font-semibold text-lg hover:bg-blue-50 transition-all transform hover:scale-105">
-              Voir la démo
-            </button>
-          </div>
-          <p className="mt-8 text-gray-500 text-sm">
-            ⚡ Essai gratuit de 30 jours • 🎯 Satisfaction garantie • 🤝 100% inclusif
-          </p>*/}
         </div>
       </section>
     </div>

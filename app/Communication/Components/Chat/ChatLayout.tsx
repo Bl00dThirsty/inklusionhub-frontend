@@ -69,11 +69,23 @@ const messagesFromStore = useChatStore(
 );
 
 const notifications = useChatStore(state => state.notifications);
+const conversationsFromStore = useChatStore(state => state.conversations);
+const setConversations = useChatStore(state => state.setConversations);
 
   // ─── RTK Query ──────────────────────────────────────
-  const { data: conversations = [] } = useGetConversationsQuery();
+  const {
+    data: conversationsFromApi = [],
+    isSuccess: hasConversationsData,
+  } = useGetConversationsQuery();
   const [sendMessage] = useSendMessageMutation();
   const [markMessageRead] = useMarkMessageReadMutation();
+
+  useEffect(() => {
+    if (!hasConversationsData) return;
+    setConversations(conversationsFromApi);
+  }, [hasConversationsData, conversationsFromApi, setConversations]);
+
+  const conversations = conversationsFromStore;
   /* Voice recording */
   const [isRecording, setIsRecording] = useState(false);
   const [recordDuration, setRecordDuration] = useState(0);

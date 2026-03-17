@@ -19,6 +19,7 @@ interface ChatStore {
   activeConversationId: string | null;
   notifications: AppNotification[];
   addNotification: (notif: AppNotification) => void;
+  applyIncomingNotification: (notif: AppNotification, currentUserId: string) => void;
   clearNotifications: () => void;
   // Actions
   setConversations: (convs: Conversation[]) => void;
@@ -33,6 +34,31 @@ interface ChatStore {
 }
 
 const MAX_MESSAGES_PER_CONV = 50; // Limite pour le LocalStorage
+
+type ConversationMessageType = NonNullable<Conversation["last_message"]>["type"];
+
+const resolveMessageTypeFromNotification = (data: any): ConversationMessageType => {
+  const rawType = data?.message_type ?? data?.type;
+  if (
+    rawType === "image" ||
+    rawType === "file" ||
+    rawType === "voice" ||
+    rawType === "call-audio" ||
+    rawType === "call-video"
+  ) {
+    return rawType;
+  }
+  if (data?.image) return "image";
+  if (data?.file) return "file";
+  if (data?.voice) return "voice";
+  return "text";
+};
+
+const resolvePreviewFromNotification = (data: any): string => {
+  if (typeof data?.preview === "string" && data.preview.trim().length > 0) return data.preview;
+  if (typeof data?.content === "string" && data.content.trim().length > 0) return data.content;
+  return "";
+};
 
 export const useChatStore = create<ChatStore>()(
   persist(
@@ -97,6 +123,54 @@ addNotification: (notif) =>
   set((state) => ({
     notifications: [notif, ...state.notifications].slice(0, 50) // garde 50 max
   })),
+
+applyIncomingNotification: (notif, currentUserId) =>
+  set((state) => {
+    const convId = notif.conversation_id;
+    if (notif.type !== "new_message" || !convId) return state;
+
+    const senderId = notif.data?.sender?.id ?? notif.data?.sender_id ?? "";
+    const senderName =
+      notif.data?.sender?.name ??
+      notif.data?.sender_name ??
+      "Utilisateur";
+    const timestamp = notif.data?.timestamp ?? notif.timestamp ?? new Date().toISOString();
+    const preview = resolvePreviewFromNotification(notif.data);
+    const messageType = resolveMessageTypeFromNotification(notif.data);
+
+    let hasTargetConversation = false;
+
+    const updatedConversations = state.conversations.map((conversation) => {
+      if (conversation.id !== convId) return conversation;
+
+      hasTargetConversation = true;
+      const isOwn = senderId === currentUserId;
+      const isActive = state.activeConversationId === convId;
+
+      return {
+        ...conversation,
+        unread_count:
+          !isOwn && !isActive
+            ? (conversation.unread_count ?? 0) + 1
+            : conversation.unread_count ?? 0,
+        last_message: {
+          ...(conversation.last_message ?? {}),
+          content: preview || conversation.last_message?.content || "",
+          sender: senderName,
+          sender_id: senderId || conversation.last_message?.sender_id || "",
+          timestamp,
+          created_at: timestamp,
+          type: messageType,
+          file_name: conversation.last_message?.file_name ?? "",
+          read: isOwn || isActive,
+        } as any,
+      };
+    });
+
+    if (!hasTargetConversation) return state;
+
+    return { conversations: updatedConversations };
+  }),
 
 clearNotifications: () => set({ notifications: [] }),
       // Met à jour une conversation spécifique (ex: changer le nom, l'avatar)

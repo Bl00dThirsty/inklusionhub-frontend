@@ -62,6 +62,7 @@ export const useChatSocket = ({
   const [connectionStatus, setConnectionStatus] = useState<"disconnected" | "connecting" | "connected" | "error">("disconnected");
 
   const addNotification = useChatStore(state => state.addNotification);
+  const applyIncomingNotification = useChatStore(state => state.applyIncomingNotification);
   const addMessage = useChatStore(state => state.addMessage);
   const setMessagesForConv = useChatStore(state => state.setMessagesForConv);
   const setMessageRead = useChatStore(state => state.setMessageRead);
@@ -171,14 +172,17 @@ export const useChatSocket = ({
     return;
   }
 
- addNotification({
+  const notification: Notification = {
     id: notifId,
     type: notifType,
     data: notifData,
     timestamp: new Date().toISOString(),
     conversation_id: notifData.conversation_id,
-  });
-}, [addNotification]);
+  };
+
+  addNotification(notification);
+  applyIncomingNotification(notification, currentUserId);
+}, [addNotification, applyIncomingNotification, currentUserId]);
 
  
 // sans recréer le WebSocket à chaque changement

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { SendHorizontal, File as FileIcon, Video, X, Mic, Smile, Phone, PhoneOff, CirclePause, Play, PhoneMissed } from "lucide-react";
+import { SendHorizontal, File as FileIcon, Video, X, Mic, Smile, Phone, PhoneOff, CirclePause, Play, PhoneMissed,ChevronDown, Check, CheckCheck } from "lucide-react";
 import dynamic from 'next/dynamic';
 import {
   useGetConversationsQuery,
@@ -68,6 +68,16 @@ const messagesFromStore = useChatStore(
   )
 );
 
+  // ✅ SCROLL INFINI
+  const PAGE_SIZE = 40;
+  const [messageOffset, setMessageOffset] = useState(0);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const hasMore = useChatStore(state => activeConversationId ? state.hasMoreByConv[activeConversationId] ?? true : false);
+  const isLoadingMore = useChatStore(state => activeConversationId ? state.loadingMoreByConv[activeConversationId] ?? false : false);
+  const setHasMore = useChatStore(state => state.setHasMore);
+  const setLoadingMore = useChatStore(state => state.setLoadingMore);
+  const prependMessages = useChatStore(state => state.prependMessages);
+
 const notifications = useChatStore(state => state.notifications);
 
   // ─── RTK Query ──────────────────────────────────────
@@ -105,31 +115,20 @@ useEffect(() => {
   activeConvIdRef.current = activeConversationId;
 }, [activeConversationId]);
 
+
 useEffect(() => {
-  if (notifications.length === 0) return;
-const latest = notifications[0];
-  // 🔍 LOG DE DIAGNOSTIC
-  console.log("[TOAST DEBUG]", {
-    notifId: latest.id,
-    lastNotifId: lastNotifIdRef.current,
-    notifConvId: latest.conversation_id,
-    activeConvId: activeConversationId,
-    senderId: latest.data?.sender?.id,
-    currentUserId,
-    isOwnMessage: latest.data?.sender?.id === currentUserId,
-    isSameConv: latest.conversation_id === activeConversationId,
-    isDuplicate: latest.id === lastNotifIdRef.current,
-  });
+  if (!notifications.length) return;
 
+  const latest = notifications[0];
+  const senderId = latest.data?.sender?.id;
+  const notifConvId = latest.conversation_id;
+
+  if (senderId === currentUserId) return;
   if (latest.id === lastNotifIdRef.current) return;
-  if (latest.type !== "new_message") return;
-  if (latest.data?.sender?.id === currentUserId) return;
-
-  // ← Utiliser la ref au lieu de la valeur réactive
-  if (latest.conversation_id === activeConvIdRef.current) return;
+  if (latest.conversation_id === activeConversationId) return;
+  if (notifConvId === activeConvIdRef.current) return;
 
   lastNotifIdRef.current = latest.id;
-
   setToastNotif({
     senderName: latest.data?.sender?.name ?? "Nouveau message",
     preview: latest.data?.preview ?? "...",
@@ -138,7 +137,7 @@ const latest = notifications[0];
 
   const timer = setTimeout(() => setToastNotif(null), 4000);
   return () => clearTimeout(timer);
-}, [notifications, currentUserId]); // ← retirer activeConversationId des dépendances
+}, [notifications, currentUserId, activeConversationId]);
   
    // ─── Messages API ───────────────────────────────────
 const { data: apiMessages = [] } = useGetMessagesQuery(activeConversationId ?? "", { 
@@ -154,8 +153,10 @@ const apiMessagesKey = useMemo(
 
 const setMessagesForConv = useChatStore(state => state.setMessagesForConv);
 useEffect(() => {
-  if (!activeConversationId || apiMessages.length === 0) return;
+  if (!activeConversationId) return;
+
   setMessagesForConv(activeConversationId, apiMessages, true);
+  setHasMore(activeConversationId, apiMessages.length >= PAGE_SIZE);
 }, [apiMessagesKey, activeConversationId]);
 
   const [voiceDraft, setVoiceDraft] = useState<{
@@ -216,6 +217,7 @@ useEffect(() => {
   useEffect(() => {
   if (activeConversationId) {
     joinConversation(activeConversationId);
+    setMessageOffset(0);
   }
 }, [activeConversationId]);
  
@@ -246,7 +248,7 @@ useEffect(() => {
   markAsRead(activeConversationId);
 
   // On nettoie la Ref quand on change de conversation
-}, [normalizedMessages.length, activeConversationId, currentUserId]);
+}, [normalizedMessages, activeConversationId, currentUserId]);
 
   useEffect(() => {
     return () => {
@@ -328,9 +330,14 @@ useEffect(() => {
 
       // 5. Mise à jour immédiate du store Zustand (Temps réel local)
       if (sentMsg) {
-        useChatStore.getState().addMessage(sentMsg as any, currentUserId);
-      }
+      useChatStore.getState().addMessage(sentMsg as any, currentUserId);
+    }
 
+    //NOUVEAU : Notifier les autres participants via WebSocket
+    // Ceci déclenche handle_chat_message → broadcast à tous les participants
+    if (newMessage.trim()) {
+      sendMessageWS(activeConversationId, newMessage.trim(), otherUser.id);
+    }
       // 6. Reset propre de l'interface
       setNewMessage("");
       setSelectedFile(null);
@@ -481,6 +488,113 @@ useEffect(() => {
     
     return groups;
   }, [normalizedMessages]);
+
+
+  // ✅ scrollToBottom helper
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  }, []);
+
+  // ✅ Détection scroll : bouton bas + scroll infini vers le haut
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      setShowScrollButton(distFromBottom > 400);
+
+      if (container.scrollTop < 100 && hasMore && !isLoadingMore && activeConversationId) {
+        loadMoreMessages();
+      }
+    };
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [hasMore, isLoadingMore, activeConversationId]);
+
+  // ✅ SCROLL INFINI : charger les messages précédents
+  const loadMoreMessages = useCallback(async () => {
+  if (!activeConversationId || isLoadingMore || !hasMore) return;
+
+  setLoadingMore(activeConversationId, true);
+
+  try {
+    const newOffset = messageOffset + PAGE_SIZE;
+
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      console.error("[ChatLayout] Aucun token trouvé !");
+      setLoadingMore(activeConversationId, false);
+      return;
+    }
+
+    const API_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/communication";
+
+const url = `${API_URL}/conversations/${activeConversationId}/messages/?offset=${newOffset}&limit=${PAGE_SIZE}`;
+
+    console.log("[ChatLayout] Fetch messages older", { url, newOffset, PAGE_SIZE });
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("[ChatLayout] Fetch échoué", { status: response.status, responseText: text });
+      setLoadingMore(activeConversationId, false);
+      return;
+    }
+
+    const data = await response.json();
+    console.log("[ChatLayout] Réponse fetch messages :", data);
+
+    const olderMessages = Array.isArray(data.results) ? data.results : data;
+
+    if (!olderMessages || olderMessages.length === 0) {
+      console.log("[ChatLayout] Aucun message ancien trouvé, désactivation scroll infini");
+      setHasMore(activeConversationId, false);
+      setLoadingMore(activeConversationId, false);
+      return;
+    }
+
+    // Formatage des messages pour le store
+    const formatted = olderMessages.map((msg: any) => ({
+      id: msg.id,
+      content: msg.content || "",
+      sender: typeof msg.sender === "object" ? msg.sender : { id: msg.sender_id || msg.sender, name: "Utilisateur" },
+      timestamp: msg.timestamp || msg.created_at,
+      conversation_id: activeConversationId,
+      read: !!msg.is_read,
+      is_delivered: !!msg.is_delivered,
+      image: msg.image ?? null,
+      file: msg.file ?? null,
+      fileName: msg.file_name ?? null,
+      fileSize: msg.file_size ?? null,
+      voice: msg.voice ?? null,
+    }));
+
+    const container = messagesContainerRef.current;
+    const scrollHeightBefore = container?.scrollHeight ?? 0;
+
+    prependMessages(activeConversationId, formatted);
+    setMessageOffset(newOffset);
+    setHasMore(activeConversationId, olderMessages.length >= PAGE_SIZE);
+
+    // Restaure la position scroll
+    requestAnimationFrame(() => {
+      if (container) container.scrollTop = container.scrollHeight - scrollHeightBefore;
+    });
+
+  } catch (err) {
+    console.error("[ChatLayout] loadMoreMessages catch error:", err);
+  } finally {
+    if (activeConversationId) setLoadingMore(activeConversationId, false);
+  }
+}, [activeConversationId, messageOffset, hasMore, isLoadingMore]);
 
   const dateGroups = useMemo(() => {
     return Object.entries(groupedMessagesByDate).map(([dateKey, messages]) => ({

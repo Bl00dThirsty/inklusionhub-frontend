@@ -78,13 +78,13 @@ export default function FileItem({
     return fileName;
   };
   // Fonction pour ouvrir le fichier
-  const handleOpenFile = (e: React.MouseEvent) => {
+  /*const handleOpenFile = (e: React.MouseEvent) => {
     // Pour les PDF et images, ouvrir dans un nouvel onglet
     if (fileType === 'pdf' || fileType === 'image') {
       e.preventDefault();
       window.open(url, '_blank');
     }
-  };
+  };*/
 
   return (
     <div className="relative group">
@@ -94,7 +94,7 @@ export default function FileItem({
                    hover:shadow-sm cursor-pointer ${isHovered ? 'bg-gray-50' : ''}`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        onClick={handleOpenFile}
+        //onClick={handleOpenFile}
       >
         {/* Icône du fichier */}
         <div className="flex-shrink-0">

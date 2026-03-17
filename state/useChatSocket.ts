@@ -15,6 +15,7 @@ interface UseChatSocketProps {
 export interface ChatMessageWS {
   id: string;
   content: string;
+  type?: "text" | "image" | "file" | "voice" | "call-audio" | "call-video" | "deleted";
   sender: { id: string; name: string; avatar?: string };
   timestamp: string;
   read?: boolean;

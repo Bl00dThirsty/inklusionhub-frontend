@@ -13,6 +13,7 @@ export interface AppNotification {
 }
 
 interface ChatStore {
+  deleteMessage(arg0: string, messageId: string, forEveryone: boolean): unknown;
   setMessageDelivered: (convId: string, messageId: string) => void;
   setMessagesForConv(convId: string, messages: Message[], replace?: boolean): void;
   conversations: Conversation[];
@@ -35,6 +36,7 @@ interface ChatStore {
   clearOldMessages: (convId: string, limit?: number) => void;
   setHasMore: (convId: string, hasMore: boolean) => void;
   setLoadingMore: (convId: string, loading: boolean) => void;
+ updateMessage: (convId: string, messageId: string, updates: Partial<ChatMessageWS>) => void;
 }
 
 const MAX_MESSAGES_PER_CONV = 200;
@@ -74,6 +76,32 @@ export const useChatStore = create<ChatStore>()(
       notifications: [],
       hasMoreByConv: {},
       loadingMoreByConv: {},
+
+      applyIncomingNotification: (notif, currentUserId) => {
+  const { addMessage, addNotification } = get();
+
+  if (notif.type === "new_message") {
+    addNotification(notif);
+
+    if (notif.data) {
+      addMessage(
+        {
+          ...notif.data,
+          conversation_id: notif.conversation_id,
+        },
+        currentUserId
+      );
+    }
+  }
+
+  if (notif.type === "read_receipt") {
+    const { setMessageRead } = get();
+    setMessageRead(
+      notif.data.conversation_id,
+      notif.data.message_id
+    );
+  }
+},
 
       // ─── Conversations ────────────────────────────────
       setActiveConversation: (id) => set({ activeConversationId: id }),
@@ -279,6 +307,40 @@ export const useChatStore = create<ChatStore>()(
           },
         })),
 
+        //suppression d'un message envoyé
+    deleteMessage: (convId: string, messageId: string, forEveryone: boolean) => {
+  set((state) => {
+    const messages = state.messagesByConv[convId] || [];
+
+    const updated: ChatMessageWS[] = forEveryone
+      // Suppression pour tout le monde : on modifie le message
+      ? messages.map((msg) =>
+          msg.id === messageId
+            ? { ...msg, content: "Ce message a été supprimé", type: "deleted" as const }
+            : msg
+        )
+      // Suppression pour soi : on retire le message de la liste
+      : messages.filter((msg) => msg.id !== messageId);
+
+    return {
+      messagesByConv: {
+        ...state.messagesByConv,
+        [convId]: updated,
+      },
+    };
+  });
+},
+// Dans chatStore.ts, ajouter :
+updateMessage: (convId: string, messageId: string, updates: Partial<ChatMessageWS>) => {
+  set((state) => ({
+    messagesByConv: {
+      ...state.messagesByConv,
+      [convId]: (state.messagesByConv[convId] || []).map((msg) =>
+        msg.id === messageId ? ({ ...msg, ...updates } as ChatMessageWS) : msg
+      ),
+    },
+  }));
+},
     }),
     {
       name: "chat-storage",

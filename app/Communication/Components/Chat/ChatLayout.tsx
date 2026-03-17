@@ -9,6 +9,7 @@ import {
   useSendMessageMutation,
   useMarkMessageReadMutation,
   Message,
+  useDeleteMessageMutation,
 } from "@/state/chatApi";
 import ConversationList from "./ConversationList";
 import ChatMessage from "../Messages/ChatMessage";
@@ -59,6 +60,7 @@ const setActiveConversation = useChatStore(state => state.setActiveConversation)
   preview: string;
   convId: string;
 } | null>(null);
+
 
    // ─── ZUSTAND : Source de vérité réactive ─────────────────
 const messagesFromStore = useChatStore(
@@ -369,7 +371,19 @@ useEffect(() => {
     }
   };
 
+ const [deleteMessage] = useDeleteMessageMutation();
 
+const handleDeleteMessage = useCallback(async (messageId: string, forEveryone: boolean) => {
+  if (forEveryone) {
+    useChatStore.getState().updateMessage(activeConversationId!, messageId, {
+      content: "Ce message a été supprimé",
+      type: "deleted" as any,
+    });
+  } else {
+    useChatStore.getState().deleteMessage(activeConversationId!, messageId, false);
+  }
+  await deleteMessage({ messageId, forEveryone });
+}, [activeConversationId, deleteMessage]);
 
   /* ───────────────── Voice recording ───────────────── */
   const startVoiceRecording = async () => {
@@ -502,12 +516,12 @@ useEffect(() => {
   }, [normalizedMessages]);
 
 
-  // ✅ scrollToBottom helper
+  // scrollToBottom helper
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
   }, []);
 
-  // ✅ Détection scroll : bouton bas + scroll infini vers le haut
+  // Détection scroll : bouton bas + scroll infini vers le haut
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
@@ -525,7 +539,7 @@ useEffect(() => {
     return () => container.removeEventListener("scroll", handleScroll);
   }, [hasMore, isLoadingMore, activeConversationId]);
 
-  // ✅ SCROLL INFINI : charger les messages précédents
+  // SCROLL INFINI : charger les messages précédents
   const loadMoreMessages = useCallback(async () => {
   if (!activeConversationId || isLoadingMore || !hasMore) return;
 
@@ -1002,6 +1016,7 @@ const url = `${API_URL}/conversations/${activeConversationId}/messages/?offset=$
                               currentUrl={audioPlayer.currentUrl}
                               currentTime={audioPlayer.currentTime}
                               duration={audioPlayer.duration}
+                              onDelete={handleDeleteMessage}
                             />
                           );
                         })}

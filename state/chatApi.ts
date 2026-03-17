@@ -149,6 +149,17 @@ export const chatApi = createApi({
       invalidatesTags: ["Messages"],
     }),
      
+//Suppression d'un message envoyé
+    deleteMessage: builder.mutation<
+  void,
+  { messageId: string; forEveryone: boolean }
+>({
+  query: ({ messageId, forEveryone }) => ({
+    url: `/messages/${messageId}/delete/`,
+    method: "POST",
+    body: { for_everyone: forEveryone },
+  }),
+}),
     
 
     /* ----------  Recherche utilisateurs (WhatsApp) ---------- */
@@ -185,4 +196,5 @@ export const {
   useMarkMessageReadMutation,
   useGetConversationFilesQuery,
   useSearchUsersQuery,
+  useDeleteMessageMutation
 } = chatApi;

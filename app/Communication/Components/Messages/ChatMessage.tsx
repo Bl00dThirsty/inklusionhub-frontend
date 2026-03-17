@@ -11,13 +11,16 @@ import {
   FileCode2,
   FileJson,
   FileCog,
-  Phone
+  Phone,
+  Trash,
+  Trash2
 } from "lucide-react";
+import { useRef, useState } from "react";
 
 interface ChatMessageProps {
   messageId: string;
   message?: string;
-  type?: "text" | "image" | "file" | "voice" | "call-audio" | "call-video";
+  type?: "text" | "image" | "file" | "voice" | "call-audio" | "call-video"| "deleted";
 
   image?: string | null;
   file?: string | null;
@@ -43,9 +46,10 @@ interface ChatMessageProps {
 
   previousSenderId?: string | null;
   previousMessage?: { createdAt?: string };
+  onDelete?: (messageId: string, forEveryone: boolean) => void;
 }
 
-export default function ChatMessage( {
+export default function ChatMessage( {onDelete,messageId,
   type = "text", message, image, file, fileName, fileSize, voice, currentUrl, currentTime, duration, isPlaying, onPlayVoice, callStatus, callDuration, createdAt, senderId, isOwn, read, previousSenderId,
 }: ChatMessageProps) {
   const timestamp = createdAt
@@ -54,6 +58,10 @@ export default function ChatMessage( {
 
   const isImage = image && /\.(png|jpe?g|webp|gif|svg|bmp|tiff?)$/i.test(image);
   const isConsecutive = previousSenderId === senderId;
+
+  const [showMenu, setShowMenu] = useState(false);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+
 
   // Déterminer l'icône du fichier en fonction de l'extension
   const getFileIcon = (filename?: string) => {
@@ -126,6 +134,34 @@ export default function ChatMessage( {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+
+// ─── Long press (mobile) ──────────────────────────
+  const handleTouchStart = () => {
+    if (!isOwn) return;
+    longPressTimer.current = setTimeout(() => setShowMenu(true), 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  // ─── Clic droit (desktop) ─────────────────────────
+  const handleContextMenu = (e: React.MouseEvent) => {
+    if (!isOwn) return;
+    e.preventDefault();
+    setShowMenu(true);
+  };
+
+  // Props d'interaction communs à toutes les bulles
+  const interactionProps = {
+    onContextMenu: handleContextMenu,
+    onTouchStart: handleTouchStart,
+    onTouchEnd: handleTouchEnd,
+    onTouchMove: handleTouchEnd, // annule si l'utilisateur scrolle
+  };
   // Classes conditionnelles pour les bulles
   const bubbleClass = isOwn
     ? isConsecutive
@@ -145,12 +181,41 @@ export default function ChatMessage( {
 
   return (
     <div className={`flex w-full mb-1 ${isOwn ? "justify-end" : "justify-start"}`}>
-      <div className={`max-w-[70%] flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
+      <div className={`max-w-[70%] flex flex-col ${isOwn ? "items-end" : "items-start"}relative`}>
         
+        {/* Menu contextuel */}
+      {showMenu && isOwn && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+          <div className="absolute bottom-full right-0 mb-1 bg-white rounded-xl shadow-lg z-20 border border-gray-100 min-w-[200px]">
+            <button
+              onClick={() => { onDelete?.(messageId, false); setShowMenu(false); }}
+              className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              <Trash size={16} className="text-gray-500" />
+              Supprimer pour moi
+            </button>
+            <button
+              onClick={() => { onDelete?.(messageId, true); setShowMenu(false); }}
+              className="flex items-center gap-3 w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 border-t border-gray-100"
+            >
+              <Trash2 size={16} className="text-red-500" />
+              Supprimer pour tout le monde
+            </button>
+          </div>
+        </>
+      )}
+
+            {type === "deleted" && (
+        <div className="italic text-gray-500 text-sm px-3 py-2">
+          Ce message a été supprimé
+        </div>
+      )}
+
         {/* Message texte */}
        
           {message && type === "text" && (
-          <div className={`relative px-4 py-2 text-sm shadow-sm ${bubbleClass}`} 
+          <div {...interactionProps} className={`relative px-4 py-2 text-sm shadow-sm ${bubbleClass}`} 
                style={{ wordBreak: "break-word" }}>
             {/* Le contenu du message avec gestion des sauts de ligne */}
             <div className="break-words whitespace-pre-wrap overflow-wrap-anywhere text-gray-900">
@@ -170,7 +235,7 @@ export default function ChatMessage( {
 
  {/* VOICE – WHATSAPP STYLE */}
         {type === "voice" && voice?.audio && (
-          <div className={`${bubbleClass} px-3 py-2 rounded-xl flex items-center gap-3 max-w-xs`}>
+          <div {...interactionProps} className={`${bubbleClass} px-3 py-2 rounded-xl flex items-center gap-3 max-w-xs`}>
             <button
               onClick={() => onPlayVoice?.(voice.audio)}
               className="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center"
@@ -197,7 +262,7 @@ export default function ChatMessage( {
         )}
         {/* Image */}
         {image && isImage && (
-          <div className={`relative mt-1 ${isConsecutive ? 'mt-1' : 'mt-2'}`}>
+          <div {...interactionProps} className={`relative mt-1 ${isConsecutive ? 'mt-1' : 'mt-2'}`}>
             <div className={`rounded-xl shadow-md overflow-hidden ${bubbleClass}`}>
               <img
                 src={image}
@@ -217,9 +282,10 @@ export default function ChatMessage( {
           </div>
         )}
 
+        
         {/* Fichier (non-image) */}
         {file && !isImage && (
-          <div className={`relative mt-1 ${isConsecutive ? 'mt-1' : 'mt-2'}`}>
+          <div {...interactionProps} className={`relative mt-1 ${isConsecutive ? 'mt-1' : 'mt-2'}`}>
             <div className={`relative ${bubbleClass}`}>
               <a
                 href={file}
@@ -254,7 +320,7 @@ export default function ChatMessage( {
           </div>
         )}
         {(type === "call-audio" || type === "call-video") && (
-  <div className={`flex items-center gap-3 ${bubbleClass} px-4 py-2 rounded-xl`}>
+  <div {...interactionProps} className={`flex items-center gap-3 ${bubbleClass} px-4 py-2 rounded-xl`}>
     <Phone
       size={18}
       className={callStatus === "missed" ? "text-red-500" : "text-green-600"}
@@ -290,3 +356,5 @@ export default function ChatMessage( {
     </div>
   );
 }
+
+

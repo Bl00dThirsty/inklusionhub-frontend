@@ -77,14 +77,6 @@ export default function FileItem({
     }
     return fileName;
   };
-  // Fonction pour ouvrir le fichier
-  /*const handleOpenFile = (e: React.MouseEvent) => {
-    // Pour les PDF et images, ouvrir dans un nouvel onglet
-    if (fileType === 'pdf' || fileType === 'image') {
-      e.preventDefault();
-      window.open(url, '_blank');
-    }
-  };*/
 
   return (
     <div className="relative group">

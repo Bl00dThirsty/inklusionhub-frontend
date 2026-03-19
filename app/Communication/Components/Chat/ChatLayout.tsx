@@ -18,6 +18,7 @@ import FileHistory from "../History/FileHistory";
 import { useWebRTC } from "@/state/useWebRTC";
 import { useAudioPlayer } from "@/state/useAudioPlayer";
 import { useChatStore } from "@/state/chatStore";
+import { FiTrash2 } from "react-icons/fi";
 
 const EmojiPicker = dynamic(
   () => import('emoji-picker-react'),
@@ -54,6 +55,10 @@ const setActiveConversation = useChatStore(state => state.setActiveConversation)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isLoadingEmoji, setIsLoadingEmoji] = useState(false);
   const processedReadMessages = useRef<Set<string>>(new Set());
+
+  const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [deleteForEveryone, setDeleteForEveryone] = useState(false);
 
   const [toastNotif, setToastNotif] = useState<{
   senderName: string;
@@ -108,6 +113,7 @@ const setConversations = useChatStore(state => state.setConversations);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordTimerRef = useRef<NodeJS.Timeout | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // ─── WebSocket ──────────────────────────────────────
   const {
@@ -670,6 +676,28 @@ const url = `${API_URL}/conversations/${activeConversationId}/messages/?offset=$
     return "text";
   };
 
+//Fonction suppression MULTIPLE
+  const handleDeleteSelected = async () => {
+  if (!activeConversationId) return;
+
+  for (const id of selectedMessages) {
+    if (deleteForEveryone) {
+      useChatStore.getState().updateMessage(activeConversationId, id, {
+        content: "Ce message a été supprimé",
+        type: "deleted",
+      });
+    } else {
+      useChatStore.getState().deleteMessage(activeConversationId, id, false);
+    }
+
+    await deleteMessage({ messageId: id, forEveryone: deleteForEveryone });
+  }
+
+  setSelectedMessages([]);
+  setSelectionMode(false);
+  setShowDeleteModal(false);
+};
+
   // ─── Render helpers ────────────────────────────────
   const renderMobileHeader = () => (
     <div className="lg:hidden flex items-center justify-between p-3 text-black">
@@ -870,8 +898,75 @@ const url = `${API_URL}/conversations/${activeConversationId}/messages/?offset=$
 
   // ─── Main render ───────────────────────────────────
   return (
-    <div className="flex flex-col lg:flex-row h-screen max-h-screen bg-gray-50">
+    
+    <div className="flex flex-col lg:flex-row h-full w-full bg-gray-50">
+{selectionMode && (
+  <div className="fixed top-0 left-0 w-full bg-white shadow p-4 flex justify-between z-50">
+    <button
+      onClick={() => {
+        setSelectionMode(false);
+        setSelectedMessages([]);
+      }}
+      className="px-3 py-1 bg-gray-200 rounded"
+    >
+      Annuler
+    </button>
+    <span>{selectedMessages.length} sélectionné(s)</span>
 
+    <button 
+  onClick={() => setShowDeleteModal(true)}
+  className="p-2 hover:bg-red-100 rounded-full transition-colors"
+  aria-label="Supprimer"
+>
+  <FiTrash2 size={20} />
+</button>
+  </div>
+)}
+
+{showDeleteModal && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+    <div className="bg-white p-6 rounded-xl w-[320px]">
+      <h3 className="mb-4 font-semibold text-lg">
+        Supprimer {selectedMessages.length} message(s)
+      </h3>
+
+      <label className="flex items-center gap-2 mb-2">
+        <input
+          type="radio"
+          name="delete"
+          defaultChecked
+          onChange={() => setDeleteForEveryone(false)}
+        />
+        Supprimer pour moi
+      </label>
+
+      <label className="flex items-center gap-2 mb-4">
+        <input
+          type="radio"
+          name="delete"
+          onChange={() => setDeleteForEveryone(true)}
+        />
+        Supprimer pour tout le monde
+      </label>
+
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={() => setShowDeleteModal(false)}
+          className="px-4 py-2 bg-gray-200 rounded"
+        >
+          Annuler
+        </button>
+
+        <button
+          onClick={handleDeleteSelected}
+          className="px-4 py-2 bg-red-500 text-white rounded"
+        >
+          Supprimer
+        </button>
+      </div>
+    </div>
+  </div>
+)}
        {/* TOAST */}
     {toastNotif && (
       <div
@@ -949,7 +1044,7 @@ const url = `${API_URL}/conversations/${activeConversationId}/messages/?offset=$
         {/*<div className="p-4   text-black">
           <h2 className="text-2xl font-semibold text-gray-800">Discussions</h2>
         </div>*/}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto min-h-0">
           <ConversationList
             conversations={conversations}
             currentUserId={currentUserId}
@@ -970,7 +1065,7 @@ const url = `${API_URL}/conversations/${activeConversationId}/messages/?offset=$
             {/* Messages container */}
             <div 
               ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto bg-gray-50 bg-opacity-95 bg-repeat"
+              className="flex-1 overflow-y-auto min-h-0 bg-gray-50 bg-opacity-95 bg-repeat"
               style={{ 
                 
                 backgroundSize: '400px'
@@ -1016,6 +1111,10 @@ const url = `${API_URL}/conversations/${activeConversationId}/messages/?offset=$
                               currentUrl={audioPlayer.currentUrl}
                               currentTime={audioPlayer.currentTime}
                               duration={audioPlayer.duration}
+                              selectionMode={selectionMode}
+                              selectedMessages={selectedMessages}
+                              setSelectedMessages={setSelectedMessages}
+                              setSelectionMode={setSelectionMode}
                               onDelete={handleDeleteMessage}
                             />
                           );
@@ -1234,7 +1333,7 @@ const url = `${API_URL}/conversations/${activeConversationId}/messages/?offset=$
         <div className="p-4  text-black">
           <h2 className="font-semibold text-lg">Fichiers partagés</h2>
         </div>
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto min-h-0">
           <FileHistory conversationId={activeConversationId} />
         </div>
       </div>

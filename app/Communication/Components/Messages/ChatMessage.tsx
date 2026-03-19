@@ -1,4 +1,3 @@
-import { Message } from "@/state/chatApi";
 import { 
   Check, 
   CheckCheck, 
@@ -11,46 +10,64 @@ import {
   FileCode2,
   FileJson,
   FileCog,
-  Phone,
-  Trash,
-  Trash2
+  Phone
 } from "lucide-react";
 import { useRef, useState } from "react";
 
 interface ChatMessageProps {
   messageId: string;
   message?: string;
-  type?: "text" | "image" | "file" | "voice" | "call-audio" | "call-video"| "deleted";
-
+  type?: "text" | "image" | "file" | "voice" | "call-audio" | "call-video" | "deleted";
   image?: string | null;
   file?: string | null;
   fileName?: string;
   fileSize?: number;
-
-  // VOICE
   voice?: { audio: string; duration: number };
   currentUrl?: string | null;
   currentTime?: number;
   duration?: number;
   isPlaying?: boolean;
   onPlayVoice?: (url: string) => void;
-
-  // CALL
   callStatus?: "ringing" | "ongoing" | "ended" | "missed";
   callDuration?: number;
-
   createdAt?: string;
   senderId: string;
   isOwn: boolean;
   read?: boolean;
-
   previousSenderId?: string | null;
-  previousMessage?: { createdAt?: string };
   onDelete?: (messageId: string, forEveryone: boolean) => void;
+  selectionMode: boolean;
+  selectedMessages: string[];
+  setSelectedMessages: React.Dispatch<React.SetStateAction<string[]>>;
+  setSelectionMode: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-export default function ChatMessage( {onDelete,messageId,
-  type = "text", message, image, file, fileName, fileSize, voice, currentUrl, currentTime, duration, isPlaying, onPlayVoice, callStatus, callDuration, createdAt, senderId, isOwn, read, previousSenderId,
+export default function ChatMessage({ 
+  onDelete,
+  messageId,
+  type = "text", 
+  message, 
+  image, 
+  file, 
+  fileName, 
+  fileSize, 
+  voice, 
+  currentUrl, 
+  currentTime, 
+  duration, 
+  isPlaying, 
+  onPlayVoice,
+  callStatus, 
+  callDuration, 
+  createdAt, 
+  senderId, 
+  isOwn, 
+  read, 
+  previousSenderId,
+  selectionMode,
+  selectedMessages,
+  setSelectedMessages,
+  setSelectionMode
 }: ChatMessageProps) {
   const timestamp = createdAt
     ? new Date(createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
@@ -58,66 +75,49 @@ export default function ChatMessage( {onDelete,messageId,
 
   const isImage = image && /\.(png|jpe?g|webp|gif|svg|bmp|tiff?)$/i.test(image);
   const isConsecutive = previousSenderId === senderId;
+  const isSelected = selectedMessages.includes(messageId);
 
-  const [showMenu, setShowMenu] = useState(false);
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
 
-
-  // Déterminer l'icône du fichier en fonction de l'extension
+  // Déterminer l'icône du fichier
   const getFileIcon = (filename?: string) => {
     if (!filename) return <File size={20} className="text-gray-700" />;
     
     const extension = filename.split('.').pop()?.toLowerCase();
     
-    // PDF et documents similaires
     if (['pdf'].includes(extension || '')) {
       return <FileText size={20} className="text-red-600" />;
     }
-    // Documents Word
     if (['doc', 'docx', 'odt'].includes(extension || '')) {
       return <FileText size={20} className="text-blue-600" />;
     }
-    // Excel et tableurs
     if (['xls', 'xlsx', 'csv', 'ods'].includes(extension || '')) {
       return <FileText size={20} className="text-green-600" />;
     }
-    // PowerPoint et présentations
     if (['ppt', 'pptx', 'odp'].includes(extension || '')) {
       return <FileText size={20} className="text-orange-600" />;
     }
-    // Images
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'tiff', 'tif'].includes(extension || '')) {
       return <Image size={20} className="text-purple-600" />;
     }
-    // Vidéos
     if (['mp4', 'avi', 'mov', 'wmv', 'mkv', 'flv', 'webm'].includes(extension || '')) {
       return <Video size={20} className="text-purple-500" />;
     }
-    // Audio
     if (['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a', 'wma'].includes(extension || '')) {
       return <Music size={20} className="text-green-500" />;
     }
-    // Archives
     if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2'].includes(extension || '')) {
       return <FolderArchive size={20} className="text-yellow-600" />;
     }
-    // Code
     if (['js', 'ts', 'jsx', 'tsx', 'py', 'java', 'cpp', 'c', 'cs', 'php', 'rb', 'go'].includes(extension || '')) {
       return <FileCode2 size={20} className="text-yellow-500" />;
     }
-    // HTML/CSS
     if (['html', 'htm', 'css', 'scss', 'sass', 'less'].includes(extension || '')) {
       return <FileCode2 size={20} className="text-orange-500" />;
     }
-    // JSON/XML
     if (['json', 'xml', 'yml', 'yaml'].includes(extension || '')) {
       return <FileJson size={20} className="text-gray-600" />;
     }
-    // Fichiers système/config
-    if (['env', 'config', 'ini', 'toml', 'cfg'].includes(extension || '')) {
-      return <FileCog size={20} className="text-blue-400" />;
-    }
-    // Fichiers texte
     if (['txt', 'rtf', 'md', 'markdown', 'log'].includes(extension || '')) {
       return <FileText size={20} className="text-gray-700" />;
     }
@@ -134,11 +134,23 @@ export default function ChatMessage( {onDelete,messageId,
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // Formatage de la durée
+  const formatDuration = (seconds?: number) => {
+    if (!seconds) return "0:00";
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
 
-// ─── Long press (mobile) ──────────────────────────
-  const handleTouchStart = () => {
+  // Long press (mobile) - Active le mode sélection
+  const handleTouchStart = (e: React.TouchEvent) => {
     if (!isOwn) return;
-    longPressTimer.current = setTimeout(() => setShowMenu(true), 500);
+    e.preventDefault();
+    
+    longPressTimer.current = setTimeout(() => {
+      setSelectionMode(true);
+      setSelectedMessages((prev) => [...prev, messageId]);
+    }, 500); // 500ms comme WhatsApp
   };
 
   const handleTouchEnd = () => {
@@ -148,21 +160,44 @@ export default function ChatMessage( {onDelete,messageId,
     }
   };
 
-  // ─── Clic droit (desktop) ─────────────────────────
+  const handleTouchMove = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  // Clic droit (desktop) - Active le mode sélection
   const handleContextMenu = (e: React.MouseEvent) => {
     if (!isOwn) return;
     e.preventDefault();
-    setShowMenu(true);
+    
+    setSelectionMode(true);
+    setSelectedMessages((prev) => [...prev, messageId]);
   };
 
-  // Props d'interaction communs à toutes les bulles
+  // Clic en mode sélection - Sélectionne/désélectionne le message
+  const handleClick = (e: React.MouseEvent) => {
+    if (selectionMode) {
+      e.stopPropagation();
+      setSelectedMessages((prev) =>
+        prev.includes(messageId)
+          ? prev.filter(id => id !== messageId)
+          : [...prev, messageId]
+      );
+    }
+  };
+
+  // Props d'interaction
   const interactionProps = {
+    onClick: handleClick,
     onContextMenu: handleContextMenu,
     onTouchStart: handleTouchStart,
     onTouchEnd: handleTouchEnd,
-    onTouchMove: handleTouchEnd, // annule si l'utilisateur scrolle
+    onTouchMove: handleTouchMove,
   };
-  // Classes conditionnelles pour les bulles
+
+  // Classes conditionnelles
   const bubbleClass = isOwn
     ? isConsecutive
       ? "bg-[#82EFCF] rounded-tr-xl rounded-bl-xl rounded-tl-xl"
@@ -171,56 +206,34 @@ export default function ChatMessage( {onDelete,messageId,
     ? "bg-gray-200 rounded-tl-xl rounded-br-xl rounded-tr-xl"
     : "bg-gray-200 rounded-tl-xl rounded-tr-xl rounded-br-xl";
 
-    const formatDuration = (seconds?: number) => {
-  if (!seconds) return "0:00";
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
-};
-
+  // Message supprimé
+  if (type === "deleted") {
+    return (
+      <div className={`flex w-full mb-1 ${isOwn ? "justify-end" : "justify-start"}`}>
+        <div className={`px-4 py-2 text-sm italic text-gray-500 ${bubbleClass}
+        ${isSelected ? "ring-2 ring-green-500 bg-green-100" : ""}`}>
+          Ce message a été supprimé
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex w-full mb-1 ${isOwn ? "justify-end" : "justify-start"}`}>
-      <div className={`max-w-[70%] flex flex-col ${isOwn ? "items-end" : "items-start"}relative`}>
+      <div className={`max-w-[70%] flex flex-col ${isOwn ? "items-end" : "items-start"} relative`}>
         
-        {/* Menu contextuel */}
-      {showMenu && isOwn && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
-          <div className="absolute bottom-full right-0 mb-1 bg-white rounded-xl shadow-lg z-20 border border-gray-100 min-w-[200px]">
-            <button
-              onClick={() => { onDelete?.(messageId, false); setShowMenu(false); }}
-              className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
-            >
-              <Trash size={16} className="text-gray-500" />
-              Supprimer pour moi
-            </button>
-            <button
-              onClick={() => { onDelete?.(messageId, true); setShowMenu(false); }}
-              className="flex items-center gap-3 w-full px-4 py-3 text-sm text-red-600 hover:bg-red-50 border-t border-gray-100"
-            >
-              <Trash2 size={16} className="text-red-500" />
-              Supprimer pour tout le monde
-            </button>
-          </div>
-        </>
-      )}
-
-            {type === "deleted" && (
-        <div className="italic text-gray-500 text-sm px-3 py-2">
-          Ce message a été supprimé
-        </div>
-      )}
-
         {/* Message texte */}
-       
-          {message && type === "text" && (
-          <div {...interactionProps} className={`relative px-4 py-2 text-sm shadow-sm ${bubbleClass}`} 
-               style={{ wordBreak: "break-word" }}>
-            {/* Le contenu du message avec gestion des sauts de ligne */}
+        {type === "text" && message && (
+          <div 
+            {...interactionProps} 
+            className={`relative px-4 py-2 text-sm shadow-sm ${bubbleClass} ${
+              selectionMode && isSelected ? 'ring-2 ring-green-500 bg-green-100' : ''
+            }`} 
+            style={{ wordBreak: "break-word" }}
+          >
             <div className="break-words whitespace-pre-wrap overflow-wrap-anywhere text-gray-900">
               {message}
-          </div>
+            </div>
             {isOwn && (
               <span className="absolute bottom-1 right-1">
                 {read ? (
@@ -233,11 +246,19 @@ export default function ChatMessage( {onDelete,messageId,
           </div>
         )}
 
- {/* VOICE – WHATSAPP STYLE */}
+        {/* VOICE */}
         {type === "voice" && voice?.audio && (
-          <div {...interactionProps} className={`${bubbleClass} px-3 py-2 rounded-xl flex items-center gap-3 max-w-xs`}>
+          <div 
+            {...interactionProps} 
+            className={`${bubbleClass} px-3 py-2 rounded-xl flex items-center gap-3 max-w-xs ${
+              selectionMode && isSelected ? 'ring-2 ring-green-500 bg-green-100' : ''
+            }`}
+          >
             <button
-              onClick={() => onPlayVoice?.(voice.audio)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onPlayVoice?.(voice.audio);
+              }}
               className="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center"
             >
               {isPlaying && currentUrl === voice.audio ? "⏸" : "▶"}
@@ -247,10 +268,9 @@ export default function ChatMessage( {onDelete,messageId,
               <div
                 className="h-full bg-green-700"
                 style={{
-                  width:
-                    currentUrl === voice.audio && duration
-                      ? `${(currentTime! / duration) * 100}%`
-                      : "0%",
+                  width: currentUrl === voice.audio && duration
+                    ? `${(currentTime! / duration) * 100}%`
+                    : "0%",
                 }}
               />
             </div>
@@ -260,10 +280,16 @@ export default function ChatMessage( {onDelete,messageId,
             </span>
           </div>
         )}
+
         {/* Image */}
         {image && isImage && (
-          <div {...interactionProps} className={`relative mt-1 ${isConsecutive ? 'mt-1' : 'mt-2'}`}>
-            <div className={`rounded-xl shadow-md overflow-hidden ${bubbleClass}`}>
+          <div 
+            {...interactionProps} 
+            className={`relative mt-1 ${isConsecutive ? 'mt-1' : 'mt-2'}`}
+          >
+            <div className={`rounded-xl shadow-md overflow-hidden ${bubbleClass} ${
+              selectionMode && isSelected ? 'ring-2 ring-green-500 bg-green-100 rounded-xl p-1' : ''
+            }`}>
               <img
                 src={image}
                 className="max-w-[220px] max-h-[220px] object-cover"
@@ -271,7 +297,7 @@ export default function ChatMessage( {onDelete,messageId,
               />
             </div>
             {isOwn && (
-              <div className={`absolute bottom-2 right-2`}>
+              <div className="absolute bottom-2 right-2">
                 {read ? (
                   <CheckCheck size={16} className="text-blue-500" />
                 ) : (
@@ -282,16 +308,21 @@ export default function ChatMessage( {onDelete,messageId,
           </div>
         )}
 
-        
-        {/* Fichier (non-image) */}
+        {/* Fichier */}
         {file && !isImage && (
-          <div {...interactionProps} className={`relative mt-1 ${isConsecutive ? 'mt-1' : 'mt-2'}`}>
-            <div className={`relative ${bubbleClass}`}>
+          <div 
+            {...interactionProps} 
+            className={`relative mt-1 ${isConsecutive ? 'mt-1' : 'mt-2'}`}
+          >
+            <div className={`relative ${bubbleClass} ${
+              selectionMode && isSelected ? 'ring-2 ring-green-500 bg-green-100 rounded-xl p-1' : ''
+            }`}>
               <a
                 href={file}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`flex items-start gap-3 px-4 py-3 rounded-xl shadow-sm no-underline hover:opacity-90 transition-opacity`}
+                className="flex items-start gap-3 px-4 py-3 rounded-xl shadow-sm no-underline hover:opacity-90 transition-opacity"
+                onClick={(e) => selectionMode && e.preventDefault()}
               >
                 <div className="flex-shrink-0">
                   {getFileIcon(fileName)}
@@ -308,7 +339,7 @@ export default function ChatMessage( {onDelete,messageId,
                 </div>
               </a>
               {isOwn && (
-                <div className={`absolute bottom-2 right-2`}>
+                <div className="absolute bottom-2 right-2">
                   {read ? (
                     <CheckCheck size={16} className="text-blue-500" />
                   ) : (
@@ -319,42 +350,43 @@ export default function ChatMessage( {onDelete,messageId,
             </div>
           </div>
         )}
+
+        {/* Appel */}
         {(type === "call-audio" || type === "call-video") && (
-  <div {...interactionProps} className={`flex items-center gap-3 ${bubbleClass} px-4 py-2 rounded-xl`}>
-    <Phone
-      size={18}
-      className={callStatus === "missed" ? "text-red-500" : "text-green-600"}
-    />
+          <div 
+            {...interactionProps} 
+            className={`flex items-center gap-3 ${bubbleClass} px-4 py-2 rounded-xl ${
+              selectionMode && isSelected ? 'ring-2 ring-green-500 bg-green-100' : ''
+            }`}
+          >
+            <Phone
+              size={18}
+              className={callStatus === "missed" ? "text-red-500" : "text-green-600"}
+            />
+            <div className="flex flex-col">
+              <span className="text-sm text-gray-900">
+                {callStatus === "missed"
+                  ? "Appel manqué"
+                  : type === "call-video"
+                  ? "Appel vidéo"
+                  : "Appel audio"}
+              </span>
+              {callStatus !== "missed" && callDuration && (
+                <span className="text-xs text-gray-600">
+                  {formatDuration(callDuration)}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
-    <div className="flex flex-col">
-      <span className="text-sm text-gray-900">
-        {callStatus === "missed"
-          ? "Appel manqué"
-          : type === "call-video"
-          ? "Appel vidéo"
-          : "Appel audio"}
-      </span>
-
-      {callStatus !== "missed" && callDuration && (
-        <span className="text-xs text-gray-600">
-          {formatDuration(callDuration)}
-        </span>
-      )}
-    </div>
-  </div>
-)}
-
-
-        {/* Timestamp - seulement si pas consécutif */}
+        {/* Timestamp */}
         {!isConsecutive && timestamp && (
           <span className="text-[10px] text-gray-500 mt-1 px-1">
             {timestamp}
           </span>
         )}
-
       </div>
     </div>
   );
 }
-
-

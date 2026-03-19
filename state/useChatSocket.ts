@@ -29,13 +29,6 @@ export interface ChatMessageWS {
   conversation_id?: string;
 }
 
-/*interface Notification {
-  id: string;
-  type: "new_message" | "new_conversation" | "presence" | "typing" | "read_receipt";
-  data: any;
-  timestamp: string;
-  conversation_id?: string;
-}*/
 
 export const useChatSocket = ({ 
   currentUserId, 
@@ -335,6 +328,22 @@ const connectWebSocket = useCallback(() => {
           if (dr.conversation_id && dr.message_id) {
             setMessageDelivered(dr.conversation_id, dr.message_id);
           }
+          break;
+        }
+
+        case "message_deleted": {
+          const payload = data.data || data;
+
+          const { conversation_id, message_id, for_everyone } = payload;
+
+          if (conversation_id && message_id) {
+            useChatStore.getState().deleteMessage(
+              conversation_id,
+              message_id,
+              for_everyone
+            );
+          }
+
           break;
         }
         case "sync_messages": {

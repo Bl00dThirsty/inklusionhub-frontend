@@ -15,9 +15,11 @@ interface UseChatSocketProps {
 export interface ChatMessageWS {
   id: string;
   content: string;
+  type?: "text" | "image" | "file" | "voice" | "call-audio" | "call-video" | "deleted";
   sender: { id: string; name: string; avatar?: string };
   timestamp: string;
   read?: boolean;
+  is_delivered?: boolean;
   voice?: string | null;
   voiceDuration?: number | null;
   image?: string | null;
@@ -27,13 +29,6 @@ export interface ChatMessageWS {
   conversation_id?: string;
 }
 
-interface Notification {
-  id: string;
-  type: "new_message" | "new_conversation" | "presence" | "typing" | "read_receipt";
-  data: any;
-  timestamp: string;
-  conversation_id?: string;
-}
 
 export const useChatSocket = ({ 
   currentUserId, 
@@ -62,9 +57,11 @@ export const useChatSocket = ({
   const [connectionStatus, setConnectionStatus] = useState<"disconnected" | "connecting" | "connected" | "error">("disconnected");
 
   const addNotification = useChatStore(state => state.addNotification);
+  const applyIncomingNotification = useChatStore(state => state.applyIncomingNotification);
   const addMessage = useChatStore(state => state.addMessage);
   const setMessagesForConv = useChatStore(state => state.setMessagesForConv);
   const setMessageRead = useChatStore(state => state.setMessageRead);
+  const setMessageDelivered = useChatStore(state => state.setMessageDelivered);
 
 
    // --- STABILISATION DES CALLBACKS VIA REFS ---
@@ -115,6 +112,58 @@ export const useChatSocket = ({
     }
   }, []);
 
+  const currentUserIdRef = useRef(currentUserId);
+useEffect(() => { currentUserIdRef.current = currentUserId; }, [currentUserId]);
+
+
+  // handler pour les messages manqués à la reconnexion
+const handleSyncMessages = useCallback((messages: any[]) => {
+  if (!messages || messages.length === 0) return;
+
+  const byConv: Record<string, any[]> = {};
+  messages.forEach(msg => {
+    if (!msg.conversation_id) return;
+    if (!byConv[msg.conversation_id]) byConv[msg.conversation_id] = [];
+    byConv[msg.conversation_id].push(msg);
+  });
+
+  Object.entries(byConv).forEach(([convId, msgs]) => {
+    msgs.forEach(msg => {
+      addMessage({
+        id: msg.id,
+        content: msg.content,
+        sender: msg.sender,
+        timestamp: msg.timestamp,
+        read: msg.is_read || false,
+        is_delivered: true,
+        conversation_id: convId,
+        image: msg.image ?? null,
+        file: msg.file ?? null,
+        fileName: msg.fileName ?? null,
+        fileSize: msg.fileSize ?? null,
+        voice: msg.voice ?? null,
+      }, currentUserIdRef.current);
+    });
+
+    const unread = msgs.filter(m => !m.is_read);
+    if (unread.length > 0) {
+      const last = unread[unread.length - 1];
+      addNotification({
+        id: `sync-${convId}-${Date.now()}`,
+        type: "new_message",
+        data: {
+          conversation_id: convId,
+          sender: last.sender,
+          preview: last.content?.slice(0, 50) || "Nouveau message",
+          timestamp: last.timestamp,
+        },
+        timestamp: last.timestamp,
+        conversation_id: convId,
+      });
+    }
+  });
+}, [addMessage, addNotification]);
+
   const sendMessage = useCallback((payload: any, queueIfOffline = true) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       try {
@@ -145,6 +194,7 @@ export const useChatSocket = ({
     },
     timestamp: messageData.timestamp || new Date().toISOString(),
     read: messageData.is_read || false,
+    is_delivered: messageData.is_delivered || false,
     conversation_id: messageData.conversation_id,
     image: messageData.image ?? null,
     file: messageData.file ?? null,
@@ -152,32 +202,37 @@ export const useChatSocket = ({
   };
 
   //  addMessage gère l'anti-doublon dans le store
-  addMessage(msg, currentUserId);
+ addMessage(msg, currentUserIdRef.current); 
 
-}, [currentUserId]);
+}, [addMessage]);
 
   const handleNotification = useCallback((data: any) => {
-  const notifData = data.data ?? data;
+    const notif = data.data ?? data;
 
-  // Générer un id de fallback si absent pour ne jamais bloquer
-  const notifId = notifData.id
-    ? String(notifData.id)
-    : `${notifData.conversation_id ?? "unknown"}-${Date.now()}`;
+  if (!notif.conversation_id) return;
 
-  const notifType = notifData.type ?? "new_message";
+  const state = useChatStore.getState();
 
-  if (!notifData.conversation_id) {
-    console.error("[NOTIF]  conversation_id manquant:", notifData);
-    return;
-  }
+  const isActive = state.activeConversationId === notif.conversation_id;
 
- addNotification({
-    id: notifId,
-    type: notifType,
-    data: notifData,
-    timestamp: new Date().toISOString(),
-    conversation_id: notifData.conversation_id,
+  if (!isActive) {
+  addNotification({
+    id: String(notif.id ?? `${notif.conversation_id}-${Date.now()}`),
+    type: notif.type ?? "new_message",
+    data: notif,
+    timestamp: notif.timestamp ?? new Date().toISOString(),
+    conversation_id: notif.conversation_id,
   });
+}
+
+  /*addNotification({
+    id: String(notif.id ?? `${notif.conversation_id}-${Date.now()}`),
+    type: notif.type ?? "new_message",
+    data: notif,
+    timestamp: notif.timestamp ?? new Date().toISOString(),
+    conversation_id: notif.conversation_id,
+  });*/
+  console.log("[WS RECEIVED]", data);
 }, [addNotification]);
 
  
@@ -185,13 +240,15 @@ export const useChatSocket = ({
 const onMessageRef = useRef(handleChatMessage);
 const onNotifRef = useRef(handleNotification);
 const onTypingRef = useRef(updateTypingStatus);
+const onSyncRef = useRef(handleSyncMessages);
 
 // Mets à jour les refs à chaque rendu (sans déclencher de useEffect)
 useEffect(() => {
   onMessageRef.current = handleChatMessage;
   onNotifRef.current = handleNotification;
   onTypingRef.current = updateTypingStatus;
-}, [handleChatMessage, handleNotification, updateTypingStatus]);
+  onSyncRef.current = handleSyncMessages; 
+}, [handleChatMessage, handleNotification, updateTypingStatus,handleSyncMessages]);
 
 
 
@@ -266,6 +323,35 @@ const connectWebSocket = useCallback(() => {
           }
           break;
         }
+        case "delivered_receipt": {
+          const dr = data.data || data;
+          if (dr.conversation_id && dr.message_id) {
+            setMessageDelivered(dr.conversation_id, dr.message_id);
+          }
+          break;
+        }
+
+        case "message_deleted": {
+          const payload = data.data || data;
+
+          const { conversation_id, message_id, for_everyone } = payload;
+
+          if (conversation_id && message_id) {
+            useChatStore.getState().deleteMessage(
+              conversation_id,
+              message_id,
+              for_everyone
+            );
+          }
+
+          break;
+        }
+        case "sync_messages": {
+          if (Array.isArray(data.messages)) {
+            onSyncRef.current(data.messages);
+          }
+          break;
+        }
         case "join_success":
           joinedConversationsRef.current.add(data.conversation_id);
           break;
@@ -302,8 +388,6 @@ const connectWebSocket = useCallback(() => {
 }, [sendMessage, processMessageQueue]);
 
 //  Ref pour currentUserId
-const currentUserIdRef = useRef(currentUserId);
-useEffect(() => { currentUserIdRef.current = currentUserId; }, [currentUserId]);
 
 //  useEffect stable — ne se relance QUE si currentUserId change
 useEffect(() => {

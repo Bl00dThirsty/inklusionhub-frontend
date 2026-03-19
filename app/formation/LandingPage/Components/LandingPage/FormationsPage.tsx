@@ -19,7 +19,9 @@ import {
   Bookmark,
   Share2,
   Hand,
-  Link
+  Link,
+  Film,
+  Gamepad2
 } from 'lucide-react';
 
 export default function FormationsPage() {
@@ -46,16 +48,16 @@ export default function FormationsPage() {
             </div>
             <div className="relative">
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl p-6 text-white shadow-xl">
+                <div className="bg-gradient-to-br from-blue-300 to-purple-300 rounded-2xl p-6 text-white shadow-xl">
                   <div className="text-4xl font-bold mb-2">5000+</div>
                   <div className="text-lg">apprenants</div>
                   <div className="flex mt-2">
-                    {[1, 2, 3, 4, 5].map((i) => (
+                    {[1,].map((i) => (
                       <Users key={i} className="w-5 h-5 mr-1 opacity-80" />
                     ))}
                   </div>
                 </div>
-                <div className="bg-gradient-to-br from-green-300 to-teal-500 rounded-2xl p-6 text-white shadow-xl">
+                <div className="bg-gradient-to-br from-green-300 to-teal-300 rounded-2xl p-6 text-white shadow-xl">
                   <div className="text-4xl font-bold mb-2">98%</div>
                   <div className="text-lg">de satisfaction</div>
                   <div className="flex mt-2">
@@ -225,17 +227,22 @@ export default function FormationsPage() {
           
           <div className="grid md:grid-cols-4 gap-6 mb-8">
             {[
-              { icon: "🎥", title: "Vidéos", desc: "Multimodales" },
-              { icon: "📚", title: "Textes", desc: "Adaptés" },
-              { icon: "👥", title: "Classes", desc: "Virtuelles" },
-              { icon: "🎮", title: "Exercices", desc: "Interactifs" }
-            ].map((item, index) => (
-              <div key={index} className="bg-white rounded-2xl p-6 text-center shadow-lg">
-                <div className="text-4xl mb-4">{item.icon}</div>
-                <h4 className="text-xl font-bold text-gray-900 mb-1">{item.title}</h4>
-                <p className="text-gray-600">{item.desc}</p>
-              </div>
-            ))}
+              { icon: Film, title: "Vidéos", desc: "Multimodales" },
+              { icon: FileText, title: "Textes", desc: "Adaptés" },
+              { icon: Users, title: "Classes", desc: "Virtuelles" },
+              { icon: Gamepad2, title: "Exercices", desc: "Interactifs" }
+            ].map((item, index) => {
+              const IconComponent = item.icon;
+              return (
+                <div key={index} className="bg-white rounded-2xl p-6 text-center shadow-lg">
+                  <div className="flex justify-center mb-4">
+                    <IconComponent className="w-12 h-12 text-blue-600" />
+                  </div>
+                  <h4 className="text-xl font-bold text-gray-900 mb-1">{item.title}</h4>
+                  <p className="text-gray-600">{item.desc}</p>
+                </div>
+              );
+            })}
           </div>
 
           <div className="bg-white rounded-3xl p-8 shadow-xl">
@@ -263,7 +270,9 @@ export default function FormationsPage() {
               <div className="relative">
                 <div className="aspect-video bg-gradient-to-r from-blue-400 to-purple-400 rounded-2xl flex items-center justify-center">
                   <div className="text-center text-white">
-                    <div className="text-5xl mb-4">📊</div>
+                    <div className="flex justify-center mb-4">
+                      <TrendingUp className="w-12 h-12" />
+                    </div>
                     <div className="text-xl font-bold">+45% de réussite</div>
                     <div className="opacity-90">avec notre méthode</div>
                   </div>
@@ -339,18 +348,6 @@ export default function FormationsPage() {
           <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
             Rejoignez notre communauté d'apprenants et développez vos compétences dans un environnement 100% inclusif.
           </p>
-          {/*<div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:shadow-xl transition-all transform hover:scale-105 flex items-center justify-center">
-              <BookOpen className="w-6 h-6 mr-3" />
-              Explorer les formations
-            </button>
-            <button className="bg-white text-blue-600 border-2 border-blue-600 px-8 py-4 rounded-full font-semibold text-lg hover:bg-blue-50 transition-all transform hover:scale-105">
-              Voir la démo
-            </button>
-          </div>
-          <p className="mt-8 text-gray-500 text-sm">
-            ⚡ Essai gratuit de 30 jours • 🎯 Satisfaction garantie • 🤝 100% inclusif
-          </p>*/}
         </div>
       </section>
     </div>

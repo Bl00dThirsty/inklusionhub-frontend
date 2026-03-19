@@ -7,6 +7,7 @@ import CommunicationLayout from "./Chat/ComLayout";
 import ChatLayout from "./Chat/ChatLayout";
 import DashboardHeader from "@/app/Components/DashboardHeader";
 import Footer from "@/app/Components/Footer"
+import { ArrowLeft } from "lucide-react"; // N'oubliez pas d'importer ArrowLeft
 
 interface Profile {
   name: string;
@@ -76,28 +77,27 @@ export default function CommunicationPage() {
       .slice(0, 2);
   };
 
-  if (!currentUser) return <p>Chargement...</p>; // éviter le rendu avant récupération
+  if (!currentUser) return <p>Chargement...</p>;
 
   return (
-    <div className="flex flex-col h-screen overflow-auto bg-gray-50">
-      {/* Header 
-      <DashboardHeader
+    <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
+      {/* Header décommenté si nécessaire */}
+      {/* <DashboardHeader
         userName={`${profile.name} ${getInitials(profile.forename)}`}
         userRole={profile.role}
         userEmail={profile.email}
         userAvatar={getAvatarUrl(profile.avatar)}
-      />*/}
+      /> */}
 
-      {/* Layout communication */}
-      <CommunicationLayout>
-        {/* Colonne centrale : Chat */}
-        <div className="chat-responsive-wrapper col-span-12 md:col-span-12 px-2 md:px-4 overflow-y-auto h-[700px] md:h-[700px]">
-          <ChatLayout conversationId={activeConversationId} currentUserId={currentUser.id.toString()} />
-        </div>
-      </CommunicationLayout>
-
-      {/* Footer 
-      <Footer />*/}
+      {/* Layout communication - prend tout l'espace restant */}
+      <div className="flex-1 overflow-hidden">
+        <CommunicationLayout>
+          {/* Plus de hauteur fixe ! Le contenu s'adapte automatiquement */}
+          <div className="chat-responsive-wrapper">
+            <ChatLayout conversationId={activeConversationId} currentUserId={currentUser.id.toString()} />
+          </div>
+        </CommunicationLayout>
+      </div>
     </div>
   );
 }

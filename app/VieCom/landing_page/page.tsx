@@ -16,6 +16,7 @@ import {
 import Image from "next/image";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { MessagesSquare } from "lucide-react";
 
 export default function VieComPage() {
   const router = useRouter();
@@ -369,7 +370,9 @@ export default function VieComPage() {
                     {/* Texte au centre */}
                     <div className="absolute inset-0 flex items-center justify-center z-30">
                       <div className="text-center">
-                        <div className="text-6xl mb-4">💬</div>
+                        <div className="flex justify-center mb-4">
+                          <MessagesSquare className="w-12 h-12 text-blue-600" />
+                        </div>
                         <h4 className="text-xl font-bold text-gray-800 mb-2">Échanges dynamiques</h4>
                         <p className="text-gray-600">Discussions en temps réel</p>
                       </div>

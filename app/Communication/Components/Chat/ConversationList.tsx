@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FileText, ImageIcon, Mic, Phone, Plus, Search, Video, Check, CheckCheck } from "lucide-react";
 import { Conversation } from "@/state/chatApi";
 import UserSearchDrawer from "./UserSearchDrawer";
+import { useChatStore } from "@/state/chatStore";
 
 interface Props {
   conversations: Conversation[];
@@ -20,6 +21,7 @@ export default function ConversationList({
 }: Props) {
   const [search, setSearch] = useState("");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  
 
   const filtered = conversations
     .filter((conv) => conv.last_message !== null)
@@ -42,6 +44,7 @@ export default function ConversationList({
   // Format last message based on type
   const formatLastMessage = (conv: Conversation) => {
     const lastMessage = conv.last_message;
+    
     if (!lastMessage) return "Aucun message";
     
     const senderPrefix = lastMessage.sender_id === currentUserId ? "Vous : " : "";
@@ -172,7 +175,10 @@ export default function ConversationList({
           return (
             <button
               key={conv.id}
-              onClick={() => onSelectConversation(conv.id)}
+              onClick={() => {
+              onSelectConversation(conv.id);
+              useChatStore.getState().markAsRead(conv.id);
+            }}
               className={`w-full flex items-center gap-3 p-4 text-left border-b border-gray-200 hover:bg-gray-50 transition-colors  ${
                 isActive ? "bg-[#F0F2F5]" : ""
               }`}

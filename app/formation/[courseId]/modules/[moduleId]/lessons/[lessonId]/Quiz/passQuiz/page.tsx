@@ -7,6 +7,7 @@ import {
   useGetCourseBySlugQuery,
   useGetCourseModulesQuery,
   useGetLessonByIdQuery,
+  useGetModuleLessonsQuery,
   useGetQuizQuestionsLearnerQuery,
   useSubmitQuizMutation
 } from '@/state/learningApi';
@@ -96,7 +97,8 @@ const QuizPage = () => {
     refetch 
   } = useGetQuizQuestionsLearnerQuery({
     courseSlug: course?.slug as string,
-    lessonNumber: lesson?.lesson_number || 1
+    lessonNumber: lesson?.lesson_number || 1,
+    moduleId: moduleId as string
   }, { 
     skip: !lesson || !course?.slug // Ne pas exécuter tant que lesson et course.slug ne sont pas disponibles
   });
@@ -115,6 +117,11 @@ const QuizPage = () => {
     courseId as string,
     { skip: !courseId }
   );
+
+  const { data: moduleLessons, isLoading: isLoadingLessons } = useGetModuleLessonsQuery(
+    moduleId as string,
+    { skip: !moduleId }
+  );
   
   // LOG 5: Résultat des modules
   console.log('🔍 MODULES:', { modules, isModulesLoading, modulesError });
@@ -124,77 +131,49 @@ const QuizPage = () => {
   const [nextLesson, setNextLesson] = useState<any>(null);
   // Calculer la prochaine leçon
    // Calculer la prochaine leçon
+ // Calculer la prochaine leçon - UTILISER moduleLessons au lieu de fetch
   useEffect(() => {
-    console.log('🔍 CALCUL NEXT LESSON - Déclenché avec:', { lesson, modules, moduleId });
+    console.log('🔍 CALCUL NEXT LESSON - Déclenché avec:', { 
+      lesson, 
+      moduleLessons, 
+      moduleId 
+    });
     
-    if (lesson && modules) {
-      console.log('🔍 Lesson complète:', lesson);
-      console.log('🔍 Modules disponibles:', modules);
+    if (lesson && moduleLessons && moduleLessons.length > 0) {
+      console.log('🔍 Lesson actuelle:', lesson);
+      console.log('🔍 Toutes les leçons du module:', moduleLessons);
       
-      // Trouver le module actuel
-      const currentModule = modules.find((m: any) => m.id === moduleId);
-      console.log('🔍 Module actuel trouvé:', currentModule);
+      // Trouver la prochaine leçon dans le même module
+      const next = moduleLessons.find(
+        (l: any) => l.lesson_number === lesson.lesson_number + 1
+      );
       
-      if (currentModule) {
-        fetchModuleLessons(currentModule.id);
-      } else {
-        console.log('🔍 Module non trouvé avec moduleId:', moduleId);
-      }
+      console.log('🔍 Prochaine leçon trouvée:', next);
+      setNextLesson(next);
     } else {
-      console.log('🔍 Données manquantes:', { 
+      console.log('🔍 Données manquantes pour next lesson:', { 
         lessonExists: !!lesson, 
-        modulesExists: !!modules 
+        moduleLessonsExists: !!moduleLessons,
+        moduleLessonsLength: moduleLessons?.length
       });
     }
-  }, [lesson, modules, moduleId]);
+  }, [lesson, moduleLessons]);
 
-  // Fonction pour récupérer les leçons d'un module
-  const fetchModuleLessons = async (moduleId: string) => {
-    console.log('🔍 FETCH MODULE LESSONS - Module ID:', moduleId);
-    
-    try {
-      const url = `/api/manage/lessons/?module=${moduleId}`;
-      console.log('🔍 URL appelée:', url);
-      
-      const response = await fetch(url);
-      console.log('🔍 Réponse status:', response.status);
-      
-      if (!response.ok) {
-        console.log('🔍 Réponse non OK, texte:', await response.text());
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const lessons = await response.json();
-      console.log('🔍 Leçons récupérées:', lessons);
-      
-      if (lesson?.lesson_number !== undefined) {
-        const next = lessons.find(
-          (l: any) => l.lesson_number === lesson.lesson_number + 1
-        );
-        console.log('🔍 Prochaine leçon trouvée:', next);
-        setNextLesson(next);
-      } else {
-        console.log('🔍 lesson_number non défini:', lesson);
-      }
-    } catch (error) {
-      console.error('❌ Erreur lors du chargement des leçons:', error);
-    }
-  };
-
-    // LOG 6: Vérifier si on doit afficher l'écran de chargement ou d'erreur
-  useEffect(() => {
-    if (!isQuizLoading && !quizData) {
-      console.log('🔍 AFFICHAGE ERREUR - quizData est null/undefined');
-      console.log('🔍 Valeurs au moment de l\'erreur:', {
-        course: course?.slug,
-        lessonNumber: lesson?.lesson_number,
-        quizError,
-        isQuizLoading,
-        courseError,
-        lessonError
-      });
-    }
-  }, [isQuizLoading, quizData, course, lesson, quizError]);
+//     // LOG 6: Vérifier si on doit afficher l'écran de chargement ou d'erreur
+//   useEffect(() => {
+//     if (!isQuizLoading && !quizData) {
+//       console.log('🔍 AFFICHAGE ERREUR - quizData est null/undefined');
+//       console.log('🔍 Valeurs au moment de l\'erreur:', {
+//         course: course?.slug,
+//         lessonNumber: lesson?.lesson_number,
+//         moduleId,
+//         quizError,
+//         isQuizLoading,
+//         courseError,
+//         lessonError
+//       });
+//     }
+//   }, [isQuizLoading, quizData, course, lesson, quizError]);
 
   // Gestion du timer
   useEffect(() => {
@@ -216,6 +195,20 @@ const QuizPage = () => {
       return () => clearInterval(timer);
     }
   }, [quizData, quizCompleted]);
+
+   // Gestion des erreurs
+  useEffect(() => {
+    if (!isQuizLoading && !quizData && quizError) {
+      console.log('🔍 AFFICHAGE ERREUR - quizData est null/undefined');
+      console.log('🔍 Valeurs au moment de l\'erreur:', {
+        course: course?.slug,
+        lessonNumber: lesson?.lesson_number,
+        moduleId,
+        quizError,
+        isQuizLoading,
+      });
+    }
+  }, [isQuizLoading, quizData, course, lesson, quizError]);
 
   const handleAutoSubmit = async () => {
     if (!quizCompleted && Object.keys(answers).length > 0) {
@@ -260,6 +253,7 @@ const QuizPage = () => {
       const result = await submitQuiz({
         courseSlug: course?.slug as string,
         lessonNumber: lesson?.lesson_number || 1,
+        moduleId: moduleId as string,
         data: {
           answers,
           time_spent_seconds: timeSpent

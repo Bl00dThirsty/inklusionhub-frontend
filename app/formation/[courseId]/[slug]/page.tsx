@@ -292,7 +292,7 @@ const CoursePublicPage = () => {
                 </div>
                 <div className="flex items-center">
                   <FiUsers className="mr-2" />
-                  <span>{course.enrolled_count || 0} apprenants</span>
+                  <span>{course.stats.enrolled_count || 0} apprenants</span>
                 </div>
                 <div className="flex items-center">
                   <FiBookOpen className="mr-2" />
@@ -387,7 +387,7 @@ const CoursePublicPage = () => {
                                         Chargement des modules...
                                       </span>
                                     ) : (
-                                      `${modules.length} modules • ${totalLessons} leçons • ${progress}% complété`
+                                      `${modules.length} modules • ${course.stats.lesson_count} leçons • ${progress}% complété`
                                     )}
                                   </p>
                                 </div>
@@ -569,11 +569,11 @@ const CoursePublicPage = () => {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistiques</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{course.enrolled_count || 0}</div>
+                    <div className="text-2xl font-bold text-blue-600">{course.stats.enrolled_count || 0}</div>
                     <div className="text-sm text-gray-600">Apprenants</div>
                   </div>
                   <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{course.completion_rate || 0}%</div>
+                    <div className="text-2xl font-bold text-green-600">{course.stats.completion_rate || 0}%</div>
                     <div className="text-sm text-gray-600">Complétion</div>
                   </div>
                   <div className="text-center p-4 bg-yellow-50 rounded-lg">

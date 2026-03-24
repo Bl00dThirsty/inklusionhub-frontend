@@ -44,6 +44,11 @@ const QuizPage = () => {
     );
   }
 
+  const handleSuccess = (quiz: { id: string }) => {
+  // Rediriger vers la page des questions du quiz
+  router.push(`/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}/Quiz/${quiz.id}/question`);
+};
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
@@ -67,9 +72,9 @@ const QuizPage = () => {
         {/* Formulaire */}
         <QuizForm 
            lessonId={lessonId as string}
-          // initialQuiz={quiz}
+           //initialQuiz={quiz}
            //initialQuestions={questions || []}  // 👈 Utilisez les questions récupérées
-           onSuccess={() => router.push(`/formation/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}`)}
+           onSuccess={handleSuccess}
         />
       </div>
     </div>

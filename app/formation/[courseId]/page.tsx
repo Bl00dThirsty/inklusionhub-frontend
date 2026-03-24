@@ -487,7 +487,9 @@ const {
                         Chargement des modules...
                       </span>
                     ) : (
-                      `${modules.length} modules • ${course.stats.lesson_count} leçons • ${progress}% complété`
+
+                      `${modules.length} modules • ${course.stats.lesson_count || 0} leçons • ${progress}% complété`
+
                     )}
                   </p>
                 </div>
@@ -579,7 +581,7 @@ const {
                                 <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-gray-500">
                                   <span className="flex items-center gap-1">
                                     <FiBookOpen size={14} />
-                                    {module.lessons_count || moduleLessons.length} leçons
+                                    {module.lessons_count} leçons
                                   </span>
                                   <span>{module.total_points} points</span>
                                   {module.estimated_hours && (
@@ -832,7 +834,7 @@ const {
                 <div className="pt-4 border-t border-gray-200">
                   <div className="text-sm text-gray-600 mb-2">Apprenants inscrits</div>
                   <div className="text-2xl font-bold text-gray-900">
-                    {course.enrolled_count || 0}
+                    {course.stats.enrolled_count || 0}
                   </div>
                 </div>
               </div>

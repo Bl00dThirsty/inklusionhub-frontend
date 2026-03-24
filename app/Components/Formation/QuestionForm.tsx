@@ -31,8 +31,8 @@ const QuestionForm = ({
 
   const { register, control, watch, setValue, formState: { errors } } = useForm({
     defaultValues: question || {
-      text: 'Nouvelle question',
-      media_url: 'https://example.com/default.gif',
+      text: '',
+      media_url: '',
       media_type: 'gif',
       points: 2,
       explanation: '',
@@ -69,6 +69,17 @@ const QuestionForm = ({
     });
     return () => subscription.unsubscribe();
   }, [watch, index, correctChoiceIndex, onChange]);
+
+
+  // Mettre à jour correctChoiceIndex quand question change
+  React.useEffect(() => {
+    if (question?.choices) {
+      const newCorrectIndex = question.choices.findIndex((c: any) => c.is_correct);
+      if (newCorrectIndex !== -1 && newCorrectIndex !== correctChoiceIndex) {
+        setCorrectChoiceIndex(newCorrectIndex);
+      }
+    }
+  }, [question]);
 
   const handleSetCorrectChoice = (choiceIndex: number) => {
     setCorrectChoiceIndex(choiceIndex);

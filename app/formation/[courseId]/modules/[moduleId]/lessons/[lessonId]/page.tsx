@@ -25,12 +25,14 @@ import {
   FiLoader,
   FiAward,
   FiTrash,
-  FiPackage
+  FiPackage,
+  FiEye,
+  FiPenTool
 } from 'react-icons/fi';
 import { MdOutlineQuiz, MdSubtitles } from 'react-icons/md';
 import { FaSignLanguage } from 'react-icons/fa';
 import Link from 'next/link';
-import { TrashIcon, PencilIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { TrashIcon, PencilIcon} from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { useGetCurrentUserQuery } from '@/state/api';
 
@@ -45,7 +47,7 @@ const LessonPage = () => {
 
   const { data: quizArray, isLoading: isLoadingQuiz } = useGetLessonQuizQuery(lessonId as string);
   // Extraire le premier élément du tableau (s'il existe)
-const quiz = Array.isArray(quizArray) && quizArray.length > 0 ? quizArray[0] : null;
+  const quiz = Array.isArray(quizArray) && quizArray.length > 0 ? quizArray[0] : null;
   console.log('Quiz data:', quiz?.id); // Debug: Affichez les données du quiz pour vérifier leur structure
   const { 
     data: apiUserData, 
@@ -54,7 +56,7 @@ const quiz = Array.isArray(quizArray) && quizArray.length > 0 ? quizArray[0] : n
     refetch: refetchCourse      
    } = useGetCurrentUserQuery();
     
-        // Gérer les erreurs de récupération des données utilisateur
+    // Gérer les erreurs de récupération des données utilisateur
     useEffect(() => {
         if (isError) {
             toast.error('Erreur de chargement, vous êtes redirigé vers la page principale');
@@ -236,13 +238,20 @@ const [deleteLesson] = useDeleteLessonMutation();
           <button
             onClick={() =>
               router.push(
-                `/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}/Quiz/passQuiz/`
+
+                `/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}/Quiz/passQuiz`
+
               )
             }
             className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors flex items-center"
           >
             Commencer le quiz
           </button>
+            <p className="text-sm text-gray-500 mt-2">
+                {quiz?.max_attempts} tentative{quiz?.max_attempts > 1 ? 's' : ''} maximum • 
+                Note de passage: {quiz?.pass_percentage}% • 
+                {quiz?.time_limit_minutes ? ` Temps limité: ${quiz.time_limit_minutes}min` : ' Temps illimité'}
+            </p>
         </div>
       )}
     </div>
@@ -346,7 +355,7 @@ const [deleteLesson] = useDeleteLessonMutation();
                   className="p-1 rounded-full hover:bg-yellow-100 text-yellow-600 transition"
                   title="Modifier la leçon"
               >
-              <PencilIcon className="w-5 h-5" />
+              <FiPenTool className="w-5 h-5" />
               </button>
 
              {/* Bouton supprimer */}
@@ -357,17 +366,16 @@ const [deleteLesson] = useDeleteLessonMutation();
             >
               <FiTrash className="w-5 h-5" />
             </button>
-            {/* Bouton consulter Quiz */}
-            <button
-                onClick={() =>
-                    router.push(
-                    `/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}/Quiz/${quiz?.id}`
-                 )
-                }
-                 className="p-1 rounded-full hover:bg-red-100 text-red-600 transition"
+
+              <button
+                 onClick={() =>
+              router.push(
+                `/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}/Quiz/${quiz?.id}`
+              )}
+                 className="p-1 rounded-full hover:bg-blue-100 text-blue-600 transition"
                  title="Voir le Quiz"
-            >
-              <EyeIcon className="w-5 h-5" />
+              >
+              <FiEye className="w-5 h-5" />
             </button>
             </div>
           </div>

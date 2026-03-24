@@ -83,7 +83,7 @@ export const chatApi = createApi({
      /* ---------- Conversations ---------- */
     // Liste des conversations
     getConversations: builder.query<Conversation[], void>({
-      query: () => "/conversations/",
+      query: () => "/communication/conversations/",
       providesTags: (result) =>
         result
           ? [
@@ -95,7 +95,7 @@ export const chatApi = createApi({
 
     // Liste des messages d'une conversation
     getMessages: builder.query<Message[], string>({
-      query: (conversationId) => `/conversations/${conversationId}/messages/`,
+      query: (conversationId) => `/communication/conversations/${conversationId}/messages/`,
       providesTags: (result, _error, conversationId) =>
         result
           ? [
@@ -108,7 +108,7 @@ export const chatApi = createApi({
     // Créer ou récupérer une conversation avec un utilisateur
     createOrGetConversation: builder.mutation<{ id: string }, { userId: string }>({
       query: ({ userId }) => ({
-        url: "/conversations/create-or-get/",
+        url: "/communication/conversations/create-or-get/",
         method: "POST",
         body: { user_id: userId },
       }),
@@ -117,7 +117,7 @@ export const chatApi = createApi({
 
     // Liste des utilisateurs (excluant l’utilisateur connecté)
     getUsers: builder.query<User[], void>({
-      query: () => "/users/",
+      query: () => "/communication/users/",
       providesTags: ["Users"],
     }),
 
@@ -127,7 +127,7 @@ export const chatApi = createApi({
         { conversationId: string; formData: FormData }
       >({
         query: ({ conversationId, formData }) => ({
-          url: `/conversations/${conversationId}/messages/list-create/`,
+          url: `/communication/conversations/${conversationId}/messages/list-create/`,
           method: "POST",
           body: formData,
         }),
@@ -143,7 +143,7 @@ export const chatApi = createApi({
     // Marquer un message comme lu
     markMessageRead: builder.mutation<void, { messageId: string }>({
       query: ({ messageId }) => ({
-        url: `/messages/${messageId}/read/`,
+        url: `/communication/messages/${messageId}/read/`,
         method: "POST",
       }),
       invalidatesTags: ["Messages"],
@@ -168,14 +168,14 @@ export const chatApi = createApi({
   { q: string; page?: number }
 >({
   query: ({ q, page = 1 }) => ({
-    url: "/users/search/",
+    url: "/communication/users/search/",
     params: { q, page },
   }),
   providesTags: ["Users"],
 }),
     // Récupérer les fichiers d'une conversation
     getConversationFiles: builder.query<ConversationFile[], string>({
-      query: (conversationId) => `/conversations/${conversationId}/files/`,
+      query: (conversationId) => `/communication/conversations/${conversationId}/files/`,
       providesTags: (result, _error, conversationId) =>
         result
           ? [

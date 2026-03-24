@@ -15,6 +15,7 @@
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.4",
     "@reduxjs/toolkit": "^2.11.1",
+<<<<<<< Updated upstream
     "@tiptap/extension-color": "^3.20.4",
     "@tiptap/extension-image": "^3.20.4",
     "@tiptap/extension-link": "^3.20.4",
@@ -23,6 +24,16 @@
     "@tiptap/extension-underline": "^3.20.4",
     "@tiptap/react": "^3.20.4",
     "@tiptap/starter-kit": "^3.20.4",
+=======
+    "@tiptap/extension-color": "^3.20.1",
+    "@tiptap/extension-image": "^3.20.1",
+    "@tiptap/extension-link": "^3.20.1",
+    "@tiptap/extension-text-align": "^3.20.1",
+    "@tiptap/extension-text-style": "^3.20.1",
+    "@tiptap/extension-underline": "^3.20.1",
+    "@tiptap/react": "^3.20.1",
+    "@tiptap/starter-kit": "^3.20.1",
+>>>>>>> Stashed changes
     "class-variance-authority": "^0.7.1",
     "cookie": "^1.1.1",
     "emoji-picker-react": "^4.4.1",

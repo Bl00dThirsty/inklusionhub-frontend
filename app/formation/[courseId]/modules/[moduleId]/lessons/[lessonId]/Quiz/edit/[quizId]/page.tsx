@@ -68,7 +68,7 @@ const { data: questions, isLoading: isLoadingQuestions } = useGetQuizQuestionsQu
         <QuizForm 
            lessonId={lessonId as string}
            initialQuiz={quiz}
-           initialQuestions={questions || []}  // 👈 Utilisez les questions récupérées
+          //  initialQuestions={questions || []}  // 👈 Utilisez les questions récupérées
            onSuccess={() => router.push(`/formation/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/quiz/${quizId}`)}
         />
       </div>

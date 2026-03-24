@@ -7,7 +7,8 @@ import {
   useGetQuizQuestionsQuery,
   useDeleteQuizMutation,
   useDeleteQuestionMutation,
-  useGetQuizByIdQuery
+  useGetQuizByIdQuery,
+  useGetQuestionChoicesQuery
 } from '@/state/learningApi';
 import {
   FiArrowLeft,
@@ -31,6 +32,14 @@ import { MdOutlineQuiz, MdOutlineQuestionAnswer } from 'react-icons/md';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
+interface Choice {
+   id: string;
+  text: string;
+  sign_video_url?: string;
+  is_correct: boolean;
+  order: number;
+}
+
 const QuizDetailPage = () => {
   const params = useParams();
   const router = useRouter();
@@ -44,6 +53,7 @@ const QuizDetailPage = () => {
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   console.log('quiId:', quizId); // Debug: Affichez le quizId pour vérifier sa valeur
+
   // Récupérer le quiz
   const { 
     data: quizdata, 
@@ -52,12 +62,15 @@ const QuizDetailPage = () => {
     refetch: refetchQuiz 
   } = useGetLessonQuizQuery(lessonId);
 
+    // État pour stocker les IDs des questions dont on a déjà chargé les choix
+  const [loadedChoicesForQuestions, setLoadedChoicesForQuestions] = useState<Set<string>>(new Set());
+
    // Récupérer les détails du quiz (pour s'assurer que nous avons les bonnes données)
-    const {
-      data: quiz,
-      isLoading: isLoadingQuiz,
-      error: quizError,
-    } = useGetQuizByIdQuery(quizId);
+  const {
+    data: quiz,
+    isLoading: isLoadingQuiz,
+    error: quizError,
+  } = useGetQuizByIdQuery(quizId);
 
   // Récupérer les questions du quiz
   const { 
@@ -67,6 +80,16 @@ const QuizDetailPage = () => {
   } = useGetQuizQuestionsQuery(quizId, { 
     skip: !quizId 
   });
+
+  // Charger les choix pour chaque question individuellement
+  const questionsChoices = questions?.reduce((acc, question) => {
+    // Utiliser le hook pour chaque question (mais les hooks ne peuvent pas être appelés dans une boucle)
+    // Nous allons plutôt créer un composant séparé ou utiliser une approche différente
+    return acc;
+  }, {});
+
+  // Solution 1: Utiliser un composant séparé pour chaque question
+  // Nous allons créer un composant QuestionWithChoices plus bas
 
   // Mutations
   const [deleteQuiz, { isLoading: isDeletingQuiz }] = useDeleteQuizMutation();
@@ -113,13 +136,13 @@ const QuizDetailPage = () => {
 
   const handleEditQuestion = (questionId: string) => {
     router.push(
-      `/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}/quiz/questions/${questionId}/edit`
+      `/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}/Quiz/${quizId}/question/${questionId}/`
     );
   };
 
   const handleAddQuestion = () => {
     router.push(
-      `/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}/Quiz/edit/${quizId}`
+      `/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}/Quiz/${quizId}/question`
     );
   };
 
@@ -127,6 +150,10 @@ const QuizDetailPage = () => {
     router.push(
       `/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}/Quiz/edit/${quizId}`
     );
+  };
+  
+  const backToLesson = () => {
+    router.push(`/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}`);
   };
 
   // États de chargement
@@ -154,13 +181,13 @@ const QuizDetailPage = () => {
             </p>
             <div className="flex gap-4 justify-center">
               <button
-                onClick={() => router.back()}
+                onClick={backToLesson}
                 className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
               >
                 Retour
               </button>
               <Link
-                href={`/formation/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/quiz/create`}
+                href={`/formation/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}/Quiz/create`}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 Créer un quiz
@@ -180,7 +207,7 @@ const QuizDetailPage = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => router.back()}
+                onClick={backToLesson}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 title="Retour à la leçon"
               >
@@ -325,200 +352,24 @@ const QuizDetailPage = () => {
             </div>
           ) : (
             <div className="divide-y divide-gray-200">
-              {questions?.map((question, index) => {
-                const isExpanded = expandedQuestions.has(question.id);
-                const correctChoices = question.choices?.filter(c => c.is_correct) || [];
-
-                return (
-                  <div key={question.id} className="p-6 hover:bg-gray-50 transition-colors">
-                    {/* En-tête de la question */}
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-700 rounded-full font-semibold">
-                            {index + 1}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            {question.media_type === 'video' ? (
-                              <FiVideo className="text-purple-600" size={16} />
-                            ) : (
-                              <FiImage className="text-green-600" size={16} />
-                            )}
-                            <span className="text-sm font-medium text-gray-600">
-                              {question.points} point{question.points > 1 ? 's' : ''}
-                            </span>
-                          </div>
-                          <button
-                            onClick={() => toggleQuestion(question.id)}
-                            className="text-gray-400 hover:text-gray-600"
-                          >
-                            {isExpanded ? <FiChevronUp size={20} /> : <FiChevronDown size={20} />}
-                          </button>
-                        </div>
-
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
-                          {question.text}
-                        </h3>
-
-                        {/* Aperçu du média */}
-                        {!isExpanded && question.media_url && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <span className="px-2 py-1 bg-gray-100 rounded">
-                              Média: {question.media_url.split('/').pop()?.substring(0, 30)}...
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Aperçu des choix */}
-                        {!isExpanded && (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {question.choices?.map((choice, idx) => (
-                              <span
-                                key={idx}
-                                className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${
-                                  choice.is_correct
-                                    ? 'bg-green-100 text-green-700'
-                                    : 'bg-gray-100 text-gray-600'
-                                }`}
-                              >
-                                {choice.is_correct && <FiCheckCircle size={12} />}
-                                {choice.text.substring(0, 20)}...
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Actions de la question */}
-                      <div className="flex items-center gap-2 ml-4">
-                        <button
-                          onClick={() => handleEditQuestion(question.id)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Modifier la question"
-                        >
-                          <FiEdit size={18} />
-                        </button>
-                        
-                        {showDeleteConfirm === question.id ? (
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleDeleteQuestion(question.id)}
-                              className="p-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-                              title="Confirmer la suppression"
-                            >
-                              <FiCheckCircle size={18} />
-                            </button>
-                            <button
-                              onClick={() => setShowDeleteConfirm(null)}
-                              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                              title="Annuler"
-                            >
-                              <FiXCircle size={18} />
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setShowDeleteConfirm(question.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Supprimer la question"
-                          >
-                            <FiTrash2 size={18} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Détails de la question (déroulée) */}
-                    {isExpanded && (
-                      <div className="mt-6 pl-11 space-y-4">
-                        {/* Média */}
-                        {question.media_url && (
-                          <div className="bg-gray-50 p-4 rounded-lg">
-                            <p className="text-sm font-medium text-gray-700 mb-2">Média de la question :</p>
-                            <div className="flex items-center gap-2">
-                              {question.media_type === 'video' ? (
-                                <FiVideo className="text-purple-600" size={20} />
-                              ) : (
-                                <FiImage className="text-green-600" size={20} />
-                              )}
-                              <a 
-                                href={question.media_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:underline text-sm break-all"
-                              >
-                                {question.media_url}
-                              </a>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Choix de réponses */}
-                        <div>
-                          <p className="text-sm font-medium text-gray-700 mb-3">Choix de réponses :</p>
-                          <div className="space-y-2">
-                            {question.choices?.map((choice, idx) => (
-                              <div
-                                key={idx}
-                                className={`p-3 rounded-lg border ${
-                                  choice.is_correct
-                                    ? 'border-green-500 bg-green-50'
-                                    : 'border-gray-200 bg-white'
-                                }`}
-                              >
-                                <div className="flex items-start gap-3">
-                                  <div className="flex-shrink-0 pt-1">
-                                    {choice.is_correct ? (
-                                      <FiCheckCircle className="text-green-600" size={18} />
-                                    ) : (
-                                      <FiXCircle className="text-gray-400" size={18} />
-                                    )}
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className={`text-gray-900 ${choice.is_correct ? 'font-medium' : ''}`}>
-                                      {choice.text}
-                                    </p>
-                                    {choice.sign_video_url && (
-                                      <a
-                                        href={choice.sign_video_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1 mt-2 text-sm text-purple-600 hover:underline"
-                                      >
-                                        <FiVideo size={14} />
-                                        Voir le signe
-                                      </a>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Explication */}
-                        {question.explanation && (
-                          <div className="bg-blue-50 p-4 rounded-lg">
-                            <p className="text-sm font-medium text-blue-800 mb-1">Explication :</p>
-                            <p className="text-sm text-blue-700">{question.explanation}</p>
-                            {question.demonstration_video_url && (
-                              <a
-                                href={question.demonstration_video_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 mt-3 text-sm text-blue-600 hover:underline"
-                              >
-                                <FiVideo size={14} />
-                                Voir la vidéo de démonstration
-                              </a>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {questions?.map((question, index) => (
+                <QuestionWithChoices
+                  key={question.id}
+                  question={question}
+                  index={index}
+                  courseId={courseId}
+                  moduleId={moduleId}
+                  lessonId={lessonId}
+                  quiId={quizId}
+                  isExpanded={expandedQuestions.has(question.id)}
+                  onToggle={() => toggleQuestion(question.id)}
+                  onEdit={() => handleEditQuestion(question.id)}
+                  onDelete={() => setShowDeleteConfirm(question.id)}
+                  showDeleteConfirm={showDeleteConfirm === question.id}
+                  onConfirmDelete={() => handleDeleteQuestion(question.id)}
+                  onCancelDelete={() => setShowDeleteConfirm(null)}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -534,6 +385,231 @@ const QuizDetailPage = () => {
           </button>
         </div>
       </div>
+    </div>
+  );
+};
+
+// Composant séparé pour gérer les choix d'une question
+const QuestionWithChoices = ({ 
+  question, 
+  index, 
+  courseId, 
+  moduleId, 
+  lessonId,
+  quizId,
+  isExpanded,
+  onToggle,
+  onEdit,
+  onDelete,
+  showDeleteConfirm,
+  onConfirmDelete,
+  onCancelDelete
+}: any) => {
+  // Charger les choix pour cette question spécifique
+  const { data: choices, isLoading: isLoadingChoices } = useGetQuestionChoicesQuery(question.id);
+  const router = useRouter();
+  return (
+    <div className="p-6 hover:bg-gray-50 transition-colors">
+      {/* En-tête de la question */}
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-700 rounded-full font-semibold">
+              {index + 1}
+            </span>
+            <div className="flex items-center gap-2">
+              {question.media_type === 'video' ? (
+                <FiVideo className="text-purple-600" size={16} />
+              ) : (
+                <FiImage className="text-green-600" size={16} />
+              )}
+              <span className="text-sm font-medium text-gray-600">
+                {question.points} point{question.points > 1 ? 's' : ''}
+              </span>
+            </div>
+            <button
+              onClick={onToggle}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              {isExpanded ? <FiChevronUp size={20} /> : <FiChevronDown size={20} />}
+            </button>
+          </div>
+
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {question.text}
+          </h3>
+
+          {/* Aperçu du média */}
+          {!isExpanded && question.media_url && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span className="px-2 py-1 bg-gray-100 rounded">
+                Média: {question.media_url.split('/').pop()?.substring(0, 30)}...
+              </span>
+            </div>
+          )}
+
+          {/* Aperçu des choix */}
+          {!isExpanded && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {isLoadingChoices ? (
+                <span className="text-sm text-gray-500 flex items-center gap-1">
+                  <FiLoader className="animate-spin" size={12} />
+                  Chargement...
+                </span>
+              ) : choices && choices.length > 0 ? (
+                choices.map((choice: any, idx: number) => (
+                  <span
+                    key={choice.id || idx}
+                    className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${
+                      choice.is_correct
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {choice.is_correct && <FiCheckCircle size={12} />}
+                    {choice.text?.substring(0, 20)}...
+                  </span>
+                ))
+              ) : (
+                <span className="text-sm text-yellow-600">
+                  Aucun choix défini
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Actions de la question */}
+        <div className="flex items-center gap-2 ml-4">
+          <button
+            onClick={onEdit}
+            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            title="Modifier la question"
+          >
+            <FiEdit size={18} />
+          </button>
+          
+          {showDeleteConfirm ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onConfirmDelete}
+                className="p-2 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                title="Confirmer la suppression"
+              >
+                <FiCheckCircle size={18} />
+              </button>
+              <button
+                onClick={onCancelDelete}
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Annuler"
+              >
+                <FiXCircle size={18} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onDelete}
+              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              title="Supprimer la question"
+            >
+              <FiTrash2 size={18} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Détails de la question (déroulée) */}
+      {isExpanded && (
+        <div className="mt-6 pl-11 space-y-4">
+          {/* Média */}
+          {question.media_url && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-sm font-medium text-gray-700 mb-2">Média de la question :</p>
+              <div className="flex items-center gap-2">
+                {question.media_type === 'video' ? (
+                  <FiVideo className="text-purple-600" size={20} />
+                ) : (
+                  <FiImage className="text-green-600" size={20} />
+                )}
+                <a 
+                  href={question.media_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline text-sm break-all"
+                >
+                  {question.media_url}
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* Choix de réponses */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-700">Choix de réponses :</p>
+              {isLoadingChoices && (
+                <span className="text-sm text-gray-500 flex items-center gap-1">
+                  <FiLoader className="animate-spin" size={14} />
+                  Chargement...
+                </span>
+              )}
+            </div>
+            
+            {choices && choices.length > 0 ? (
+              <div className="space-y-2">
+                {choices.map((choice: any, idx: number) => (
+                  <div
+                    key={choice.id || idx}
+                    className={`p-3 rounded-lg border ${
+                      choice.is_correct
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-gray-200 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 pt-1">
+                        {choice.is_correct ? (
+                          <FiCheckCircle className="text-green-600" size={18} />
+                        ) : (
+                          <FiXCircle className="text-gray-400" size={18} />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className={`text-gray-900 ${choice.is_correct ? 'font-medium' : ''}`}>
+                          {choice.text}
+                        </p>
+                        {choice.sign_video_url && (
+                          <a
+                            href={choice.sign_video_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 mt-2 text-sm text-purple-600 hover:underline"
+                          >
+                            <FiVideo size={14} />
+                            Voir le signe
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 bg-gray-50 rounded-lg">
+                <p className="text-gray-500">Aucun choix défini pour cette question</p>
+                <button
+                  onClick={() => router.push(
+                    `/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}/Quiz/${quizId}/question/${question.id}`
+                  )}
+                  className="mt-2 text-sm text-blue-600 hover:underline"
+                >
+                  Ajouter des choix
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

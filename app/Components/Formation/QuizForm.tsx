@@ -6,42 +6,27 @@ import { useRouter } from 'next/navigation';
 import { 
   useCreateQuizMutation, 
   useUpdateQuizMutation,
-  useCreateQuestionMutation,
-  useUpdateQuestionMutation,
-  useDeleteQuestionMutation,
-  useUpdateChoiceMutation,
-  useCreateChoiceMutation, 
-   useGetLessonByIdQuery
+  useGetLessonByIdQuery
 } from '@/state/learningApi';
-import { FiPlus, FiSave, FiX, FiHelpCircle } from 'react-icons/fi';
+import { FiSave } from 'react-icons/fi';
 import { toast } from 'sonner';
-import QuestionForm from './QuestionForm';
 
 interface QuizFormProps {
   lessonId: string;
   initialQuiz?: any;
-  initialQuestions?: any[];
-  onSuccess?: () => void;
+  onSuccess?: (response?: any) => void;
 }
 
-const QuizForm = ({ lessonId, initialQuiz, initialQuestions = [], onSuccess }: QuizFormProps) => {
+const QuizForm = ({ lessonId, initialQuiz, onSuccess }: QuizFormProps) => {
   const router = useRouter();
   const [createQuiz] = useCreateQuizMutation();
   const [updateQuiz] = useUpdateQuizMutation();
-  const [createQuestion] = useCreateQuestionMutation();
-  const [updateQuestion] = useUpdateQuestionMutation();
-  const [deleteQuestion] = useDeleteQuestionMutation();
-  const [updateChoice] = useUpdateChoiceMutation();
-  const [createChoice] = useCreateChoiceMutation();
-  const { data: lesson, isLoading: isLoadingLesson } = useGetLessonByIdQuery(lessonId);
   const [isSaving, setIsSaving] = useState(false);
 
   const {
     register,
     handleSubmit,
-    control,
     formState: { errors },
-    watch,
   } = useForm({
     defaultValues: initialQuiz || {
       title: 'Quiz de validation',
@@ -54,145 +39,44 @@ const QuizForm = ({ lessonId, initialQuiz, initialQuestions = [], onSuccess }: Q
     },
   });
 
-  // Gestion des questions avec useFieldArray
-  const { fields, append, remove, move } = useFieldArray({
-    control,
-    name: 'questions',
-  });
-
-  // État pour les questions supprimées (pour la mise à jour)
-  const [deletedQuestionIds, setDeletedQuestionIds] = useState<string[]>([]);
-
-  const handleAddQuestion = () => {
-    append({
-      text: 'Nouvelle question',
-      media_url: 'https://example.com/default.gif',
-      media_type: 'gif',
-      points: 2,
-      explanation: '',
-      demonstration_video_url: '',
-      order: fields.length,
-      choices: [
-        { text: '', sign_video_url: '', is_correct: true, order: 0 },
-        { text: '', sign_video_url: '', is_correct: false, order: 1 },
-        { text: '', sign_video_url: '', is_correct: false, order: 2 },
-        { text: '', sign_video_url: '', is_correct: false, order: 3 },
-      ],
-    });
-  };
-
-  const handleMoveQuestion = (fromIndex: number, toIndex: number) => {
-    move(fromIndex, toIndex);
-  };
-
-  const handleRemoveQuestion = async (index: number, questionId?: string) => {
-    if (questionId) {
-      // Si c'est une question existante, marquer pour suppression
-      setDeletedQuestionIds(prev => [...prev, questionId]);
-    }
-    remove(index);
-  };
-
- const onSubmit = async (data: any) => {
-  setIsSaving(true);
-  
-  try {
-    // 1. Sauvegarder le quiz
-    let quizResponse;
-    const quizData = {
-      lesson: lessonId,
-      title: data.title,
-      description: data.description,
-      time_limit_minutes: data.time_limit_minutes ? Number(data.time_limit_minutes) : 0,
-      max_attempts: Number(data.max_attempts),
-      pass_percentage: Number(data.pass_percentage),
-      points_available: Number(data.points_available),
-      randomize_questions: data.randomize_questions,
-    };
-
-    if (initialQuiz) {
-      quizResponse = await updateQuiz({ id: initialQuiz.id, data: quizData }).unwrap();
-    } else {
-      quizResponse = await createQuiz(quizData).unwrap();
-    }
-
-    // 2. Supprimer les questions marquées
-    for (const questionId of deletedQuestionIds) {
-      await deleteQuestion(questionId).unwrap();
-    }
-
-    // 3. Sauvegarder les questions et leurs choix
-    const questions = data.questions || [];
-    for (let i = 0; i < questions.length; i++) {
-      const question = questions[i];
-
-        // Validation
-  if (!question.text || question.text.trim() === '') {
-    toast.error(`La question ${i + 1} n'a pas de texte`);
-    continue;
-  }
-  
-  if (!question.media_url || question.media_url.trim() === '') {
-    toast.error(`La question ${i + 1} n'a pas d'URL média`);
-    continue;
-  }
-      
-      // Sauvegarder la question
-      let questionResponse;
-      const questionData = {
-        quiz: quizResponse.id,
-        text: question.text,
-        media_url: question.media_url,
-        media_type: question.media_type,
-        points: Number(question.points),
-        explanation: question.explanation || '',
-        demonstration_video_url: question.demonstration_video_url || '',
-        order: i,
-      };
-
-      if (question.id) {
-        questionResponse = await updateQuestion({ 
-          id: question.id, 
-          data: questionData 
-        }).unwrap();
-      } else {
-        questionResponse = await createQuestion(questionData).unwrap();
-      }
-
-      // 4. Sauvegarder les choix pour cette question
-      const choices = question.choices || [];
-      for (let j = 0; j < choices.length; j++) {
-        const choice = choices[j];
-        const choiceData = {
-          question: questionResponse.id,
-          text: choice.text,
-          sign_video_url: choice.sign_video_url || '',
-          is_correct: choice.is_correct,
-          order: j,
-        };
-
-        if (choice.id) {
-          await updateChoice({ id: choice.id, data: choiceData }).unwrap();
-        } else {
-          await createChoice(choiceData).unwrap();
-        }
-      }
-    }
-
-    toast.success(initialQuiz ? 'Quiz mis à jour avec succès' : 'Quiz créé avec succès');
+  const onSubmit = async (data: any) => {
+    setIsSaving(true);
     
-    if (onSuccess) {
-      onSuccess();
-    } else {
-      router.push(`/formation/lessons/${lessonId}`);
+    try {
+      const quizData = {
+        lesson: lessonId,
+        title: data.title,
+        description: data.description,
+        time_limit_minutes: data.time_limit_minutes ? Number(data.time_limit_minutes) : 0,
+        max_attempts: Number(data.max_attempts),
+        pass_percentage: Number(data.pass_percentage),
+        points_available: Number(data.points_available),
+        randomize_questions: data.randomize_questions,
+      };
+      let response;
+      if (initialQuiz) {
+        response = await updateQuiz({ id: initialQuiz.id, data: quizData }).unwrap();
+        toast.success('Quiz mis à jour avec succès');
+      } else {
+        response = await createQuiz(quizData).unwrap();
+        toast.success('Quiz créé avec succès');
+      }
+      
+      if (onSuccess) {
+        onSuccess(response);
+      } else {
+        // Rediriger vers la page du cours
+        router.push(`/learning/courses/${response.id}`);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      toast.error('Erreur lors de la sauvegarde du quiz');
+    } finally {
+      setIsSaving(false);
     }
-  } catch (error) {
-    console.error('Erreur lors de la sauvegarde:', error);
-    toast.error('Erreur lors de la sauvegarde du quiz');
-  } finally {
-    setIsSaving(false);
-  }
-};
+  };
+
+
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -300,7 +184,7 @@ const QuizForm = ({ lessonId, initialQuiz, initialQuestions = [], onSuccess }: Q
         </div>
       </div>
 
-      {/* Questions */}
+      {/* Questions
       <div className="bg-white shadow rounded-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -349,15 +233,28 @@ const QuizForm = ({ lessonId, initialQuiz, initialQuestions = [], onSuccess }: Q
                 onMoveDown={() => handleMoveQuestion(index, index + 1)}
                 isFirst={index === 0}
                 isLast={index === fields.length - 1}
-                onChange={(updatedQuestion) => {
-                  // Mettre à jour la question dans le form
-                  // La mise à jour est automatique via le watch
-                }}
+                onChange={(updatedQuestion) => handleQuestionChange(index, updatedQuestion)}
               />
             ))}
+            {/* {fields.map((field, index) => (
+              <QuestionForm
+                key={field.id}
+                index={index}
+                question={field}
+                control={control}
+                register={register}
+                setValue={setValue}
+                errors={errors}
+                onRemove={() => handleRemoveQuestion(index, field.id)}
+                onMoveUp={() => handleMoveQuestion(index, index - 1)}
+                onMoveDown={() => handleMoveQuestion(index, index + 1)}
+                isFirst={index === 0}
+                isLast={index === fields.length - 1}
+              />
+           ))}
           </div>
         )}
-      </div>
+      </div> */}
 
       {/* Boutons d'action */}
       <div className="flex justify-end gap-4">

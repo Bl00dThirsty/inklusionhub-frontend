@@ -44,6 +44,21 @@ export interface Course {
   published_at?: string;
 }
 
+export interface User {
+  id: string;
+  name: string;
+  forename: string;
+  email: string;
+  role: string;
+  full_name?: string;
+  total_points: number;
+  total_courses_completed: number;
+  total_quizzes_passed: number;
+  level_en_LSF?: string;
+  learning_preferences?: string[];
+
+}
+
 export interface Module {
   id: string;
   course: string;
@@ -80,6 +95,7 @@ export interface Lesson {
   is_completed: boolean;
   attachments?: any[];
   created_at: string;
+  
 }
 
 export interface Quiz {
@@ -522,11 +538,6 @@ getQuizQuestions: build.query<Question[], string>({
   providesTags: (result, error, quizId) => [{ type: "Quiz", id: quizId }],
 }),
 
-getQuestionById: build.query<Question, string>({
-  query: (id) => `api/manage/questions/${id}/`,
-  providesTags: (result, error, id) => [{ type: "Question", id }],
-}),
-
 createQuestion: build.mutation<Question, any>({
   query: (data) => ({
     url: 'api/manage/questions/',
@@ -540,6 +551,11 @@ createQuestion: build.mutation<Question, any>({
   invalidatesTags: (result, error, { quiz }) => [
     { type: "Quiz", id: quiz },
   ],
+}),
+
+getQuestionById: build.query<Question, string>({
+  query: (id) => `api/manage/questions/${id}/`,
+  providesTags: (result, error, id) => [{ type: "Question", id }],
 }),
 
 updateQuestion: build.mutation<Question, { id: string; data: any }>({
@@ -587,9 +603,9 @@ deleteChoice: build.mutation<void, string>({
   }),
 }),
 
-    // =================== APPRENANT ===================
+  // =================== APPRENANT ===================
     enrollCourse: build.mutation<Enrollment, EnrollCourseRequest>({
-      query: ({ course_slug }) => ({
+      query: ({ course_id, course_slug }) => ({
         url: `api/enroll/${course_slug}/`,
         method: 'POST',
       }),
@@ -764,9 +780,9 @@ export const {
   // Questions
   useGetQuizQuestionsQuery,
   useCreateQuestionMutation,
-  useGetQuestionByIdQuery,
   useUpdateQuestionMutation,
   useDeleteQuestionMutation,
+  useGetQuestionByIdQuery,
    
   // Choices
   useGetQuestionChoicesQuery,

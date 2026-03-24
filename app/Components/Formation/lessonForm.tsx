@@ -35,6 +35,7 @@ const LessonForm = ({ moduleId, lesson = null, onSuccess }: LessonFormProps) => 
   const router = useRouter();
   const [createLesson, { isLoading: isCreating }] = useCreateLessonMutation();
   const [updateLesson, { isLoading: isUpdating }] = useUpdateLessonMutation();
+  const [textContent, setTextContent] = useState<string>('');
   
   const {
     register,
@@ -117,7 +118,7 @@ const LessonForm = ({ moduleId, lesson = null, onSuccess }: LessonFormProps) => 
     }
   };
 
-  const textContent = watch('text_content') || '';
+  //const textContent = watch('text_content') || '';
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-4xl mx-auto">
@@ -228,20 +229,28 @@ const LessonForm = ({ moduleId, lesson = null, onSuccess }: LessonFormProps) => 
           </div>
         ) : null}
 
-      {contentType === 'text' || contentType === 'mixed' ? (
-  <div className="mb-4">
-    <label className="block text-sm font-medium text-gray-700 mb-2">
-      Contenu texte
-    </label>
-    <TipTapEditor
-      value={textContent}
-      onChange={(value) => {
-        setValue('text_content', value);
-      }}
+        {contentType === 'text' || contentType === 'mixed' ? (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Contenu texte
+            </label>
+            {/* <textarea
+              {...register('text_content')}
+              rows={6}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Contenu texte de la leçon..."
+            /> */}
+             <TipTapEditor
+              value={textContent}
+              onChange={(value) => {
+              setTextContent(value);
+              setValue('text_content', value); // Si vous utilisez react-hook-form
+            }}
       placeholder="Contenu texte de la leçon..."
     />
-  </div>
-) : null}
+          </div>
+        ) : null}
+
 
         {/* Accessibilité */}
         <div className="mb-4">

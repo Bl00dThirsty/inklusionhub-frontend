@@ -1,6 +1,7 @@
 
 'use client';
 
+import { BookOpen, Briefcase, Ear, Hand, User } from 'lucide-react';
 import { 
   Card, 
   CardContent, 
@@ -34,12 +35,12 @@ export function UserProfileForm({
   
   // Liste des rôles disponibles
   const availableRoles = [
-    { value: 'malentendant', label: '👂 Personne malentendante' },
-    { value: 'entendant', label: '👤 Personne entendante' },
-    { value: 'apprenant', label: '📚 Apprenant' },
-    { value: 'traducteur', label: '👋 Traducteur LSF' },
-    { value: 'employeur', label: '💼 Employeur' },
-  ];
+  { value: 'malentendant', label: 'Personne malentendante', icon: Ear },
+  { value: 'entendant', label: 'Personne entendante', icon: User },
+  { value: 'apprenant', label: 'Apprenant', icon: BookOpen },
+  { value: 'traducteur', label: 'Traducteur LSF', icon: Hand },
+  { value: 'employeur', label: 'Employeur', icon: Briefcase },
+];
 
   const commonFields = [
     { name: 'name', label: 'Nom', type: 'text' },

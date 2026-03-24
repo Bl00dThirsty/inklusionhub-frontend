@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import { Bell, Search, User, Menu, LogOut, Settings, MessageSquare, Calendar } from 'lucide-react';
+import { Bell, Search, User, Menu, LogOut, Settings, MessageSquare, Calendar, Home, MessageCircle, BookOpen, Hand, Briefcase, Users, Wrench, Ear } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import Image from 'next/image';
 import { useGetCurrentUserQuery } from '@/state/api';
@@ -58,22 +58,22 @@ export default function DashboardHeader({
   // Navigation items selon le rôle
   const getNavItems = () => {
     const baseItems = [
-      { label: 'Tableau de bord', href: '/dashboard', icon: '🏠' },
-      { label: 'Communication', href: '/Communication', icon: '💬' },
-      { label: 'Formation', href: '/formation/', icon: '📚' },
+      { label: 'Tableau de bord', href: '/dashboard', icon: Home },
+      { label: 'Communication', href: '/Communication', icon: MessageCircle },
+      { label: 'Formation', href: '/formation/', icon: BookOpen },
     ];
 
     if (userRole === 'traducteur') {
-      baseItems.push({ label: 'Mes services', href: '/dashboard/services', icon: '👋' });
+      baseItems.push({ label: 'Mes services', href: '/dashboard/services', icon: Hand });
     }
     
     if (userRole === 'employeur') {
-      baseItems.push({ label: 'Recrutement', href: '/dashboard/recrutement', icon: '💼' });
+      baseItems.push({ label: 'Recrutement', href: '/dashboard/recrutement', icon: Briefcase });
     }
     
     baseItems.push(
-      { label: 'Communauté', href: '/dashboard/communaute', icon: '👥' },
-      { label: 'Outils', href: '/dashboard/outils', icon: '🛠️' }
+      { label: 'Communauté', href: '/dashboard/communaute', icon: Users },
+      { label: 'Outils', href: '/dashboard/outils', icon: Wrench }
     );
 
     return baseItems;
@@ -108,16 +108,21 @@ export default function DashboardHeader({
 
             {/* Navigation principale */}
             <nav className="hidden lg:flex items-center space-x-1">
-              {navItems.map((item) => (
+              {navItems.map((item) => {
+  
+              const Icon = item.icon;
+
+              return (
                 <a
                   key={item.href}
                   href={item.href}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
-                  <span>{item.icon}</span>
+                  <Icon className="h-4 w-4" />
                   <span className="text-sm font-medium">{item.label}</span>
                 </a>
-              ))}
+              );
+})}
             </nav>
           </div>
 
@@ -183,16 +188,20 @@ export default function DashboardHeader({
 
                   {/* Navigation mobile */}
                   <div className="py-2 max-h-[60vh] overflow-y-auto">
-                    {navItems.map((item) => (
+                    {navItems.map((item) => {
+                      const Icon = item.icon;
+
+                      return (
                       <button
                         key={item.href}
                         onClick={() => handleMobileNavigation(item.href)}
                         className="flex items-center gap-3 w-full px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 text-left"
                       >
-                        <span className="text-lg">{item.icon}</span>
+                        <Icon className="h-5 w-5" />
                         <span className="text-gray-700 dark:text-gray-300 font-medium">{item.label}</span>
                       </button>
-                    ))}
+                      );
+                   })}
                   </div>
 
                   {/* Actions mobile */}
@@ -330,11 +339,11 @@ export default function DashboardHeader({
                   )}
                   {/* Badge rôle */}
                   <div className="absolute -bottom-1 -right-1 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                    {userRole === 'malentendant' && '👂'}
-                    {userRole === 'traducteur' && '👋'}
-                    {userRole === 'employeur' && '💼'}
-                    {userRole === 'apprenant' && '📚'}
-                    {userRole === 'entendant' && '👤'}
+                    {userRole === 'malentendant' && <Ear className="h-3 w-3" />}
+                    {userRole === 'traducteur' && <Hand className="h-3 w-3" />}
+                    {userRole === 'employeur' && <Briefcase className="h-3 w-3" />}
+                    {userRole === 'apprenant' && <BookOpen className="h-3 w-3" />}
+                    {userRole === 'entendant' && <User className="h-3 w-3" />}
                   </div>
                 </div>
                 <div className="hidden md:block text-left">

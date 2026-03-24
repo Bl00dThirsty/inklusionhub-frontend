@@ -477,7 +477,7 @@ export default function BasicProfilePage() {
             {(selectedRoles.includes('malentendant') || selectedRoles.includes('apprenant')) && (
               <div className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 rounded-r">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-blue-600">👂</span>
+                  <span className="text-blue-600"></span>
                   <h3 className="font-semibold text-blue-800">Informations complémentaires (optionnel)</h3>
                 </div>
                 <p className="text-sm text-blue-700 mb-3">

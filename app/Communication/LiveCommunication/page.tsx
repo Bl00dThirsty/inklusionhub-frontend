@@ -616,25 +616,25 @@ export default function LiveCommunication() {
         {/* Guide rapide */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
-            <h4 className="font-semibold text-blue-800 mb-2">💡 Astuce</h4>
+            <h4 className="font-semibold text-blue-800 mb-2">Astuce</h4>
             <p className="text-sm text-blue-700">
               Parlez clairement et à rythme modéré pour une meilleure transcription.
             </p>
           </div>
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-100">
-            <h4 className="font-semibold text-green-800 mb-2">🎯 Conseil</h4>
+            <h4 className="font-semibold text-green-800 mb-2"> Conseil</h4>
             <p className="text-sm text-green-700">
               Ajustez la vitesse de lecture selon vos préférences dans les paramètres.
             </p>
           </div>
           <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100">
-            <h4 className="font-semibold text-purple-800 mb-2">⚠️ Note</h4>
+            <h4 className="font-semibold text-purple-800 mb-2"> Note</h4>
             <p className="text-sm text-purple-700">
               Pour des résultats optimaux, utilisez Chrome ou Edge et un micro de qualité.
             </p>
           </div>
           <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-4 rounded-xl border border-yellow-100">
-            <h4 className="font-semibold text-yellow-800 mb-2">⏱️ Durée d’écoute</h4>
+            <h4 className="font-semibold text-yellow-800 mb-2">Durée d’écoute</h4>
             <p className="text-sm text-yellow-700">
               Enregistrez 60 s max de dictée continue et evitea des textes longs pour la transcription.
             </p>

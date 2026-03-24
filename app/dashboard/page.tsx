@@ -4,7 +4,10 @@ import { useState, useEffect } from 'react';
 import DashboardHeader from '../Components/DashboardHeader';
 import { 
   MessageSquare, Calendar, BookOpen, Briefcase, Users, TrendingUp,
-  ArrowRight, Plus, Clock, CheckCircle, Star, Bell, Download
+  ArrowRight, Plus, Clock, CheckCircle, Star, Bell, Download,
+  Hand,
+  Ear,
+  User
 } from 'lucide-react';
 import { useGetCurrentUserQuery } from '@/state/api';
 import { useRouter } from 'next/navigation';
@@ -59,6 +62,31 @@ interface ActivityItem {
   time: string;
   author?: string;
 }
+
+// ================= CONFIG ROLE =================
+const roleConfig = {
+  malentendant: {
+    label: "Malentendant",
+    icon: Ear,
+  },
+  traducteur: {
+    label: "Traducteur LSF",
+    icon: Hand,
+  },
+  employeur: {
+    label: "Employeur",
+    icon: Briefcase,
+  },
+  apprenant: {
+    label: "Apprenant",
+    icon: BookOpen,
+  },
+  entendant: {
+    label: "Entendant",
+    icon: User,
+  },
+};
+
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -143,6 +171,11 @@ export default function DashboardPage() {
     });
   }
 }, [apiUserData]);
+
+
+ // ================= ROLE ICON =================
+  const role = roleConfig[userData.role as keyof typeof roleConfig];
+  const RoleIcon = role?.icon;
 
   // Initialiser les actions rapides et l'activité
   useEffect(() => {
@@ -321,13 +354,10 @@ export default function DashboardPage() {
                 
                 {/* Badge rôle et progression */}
                 <div className="flex flex-wrap gap-4 items-center">
-                  <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+                  <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 flex items-center gap-2">
+                    {RoleIcon && <RoleIcon className="h-4 w-4" />}
                     <span className="capitalize font-medium">
-                      {userData.role === 'malentendant' && '👂 Malentendant'}
-                      {userData.role === 'traducteur' && '👋 Traducteur LSF'}
-                      {userData.role === 'employeur' && '💼 Employeur'}
-                      {userData.role === 'apprenant' && '📚 Apprenant'}
-                      {userData.role === 'entendant' && '👤 Entendant'}
+                      {role?.label}
                     </span>
                   </div>
                   

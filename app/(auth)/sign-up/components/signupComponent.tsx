@@ -41,7 +41,7 @@ export default function SignupComponent() {
 
  const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
-  // 🔐 Validation mot de passe
+  //  Validation mot de passe
   const passwordError = validatePassword(formData.password);
   if (passwordError) {
     setErrors({ password: passwordError });

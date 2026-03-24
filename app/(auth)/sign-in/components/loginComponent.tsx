@@ -90,11 +90,11 @@ const handleSubmit = async (e: React.FormEvent) => {
   throw new Error("Tokens manquants dans la réponse");
 }
 
-    // 🔐 STOCKAGE DES TOKENS (OBLIGATOIRE)
+    //  STOCKAGE DES TOKENS (OBLIGATOIRE)
     localStorage.setItem("access_token", result.access);
     localStorage.setItem("refresh_token", result.refresh);
 
-    // 🔐 CONTEXTE AUTH (UI / state)
+    //  CONTEXTE AUTH (UI / state)
     authLogin(
       {
         access: result.access,

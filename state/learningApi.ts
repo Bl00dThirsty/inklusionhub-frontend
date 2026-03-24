@@ -522,6 +522,11 @@ getQuizQuestions: build.query<Question[], string>({
   providesTags: (result, error, quizId) => [{ type: "Quiz", id: quizId }],
 }),
 
+getQuestionById: build.query<Question, string>({
+  query: (id) => `api/manage/questions/${id}/`,
+  providesTags: (result, error, id) => [{ type: "Question", id }],
+}),
+
 createQuestion: build.mutation<Question, any>({
   query: (data) => ({
     url: 'api/manage/questions/',
@@ -639,18 +644,19 @@ deleteChoice: build.mutation<void, string>({
       quiz: any;
       questions: Question[];
       current_attempt: number;
-    }, { courseSlug: string; lessonNumber: number }>({
-      query: ({ courseSlug, lessonNumber }) => 
-        `api/learner/courses/${courseSlug}/lessons/${lessonNumber}/quiz/`,
+    }, { courseSlug: string; lessonNumber: number; moduleId: string }>({
+      query: ({ courseSlug, lessonNumber, moduleId }) => 
+        `api/learner/courses/${courseSlug}/modules/${moduleId}/lessons/${lessonNumber}/quiz/`,
     }),
 
     submitQuiz: build.mutation<SubmitQuizResponse, {
       courseSlug: string;
       lessonNumber: number;
+      moduleId: string;
       data: SubmitQuizRequest;
     }>({
-      query: ({ courseSlug, lessonNumber, data }) => ({
-        url: `api/learner/courses/${courseSlug}/lessons/${lessonNumber}/quiz/`,
+      query: ({ courseSlug, lessonNumber, moduleId, data }) => ({
+        url: `api/learner/courses/${courseSlug}/modules/${moduleId}/lessons/${lessonNumber}/quiz/`,
         method: 'POST',
         body: data,
       }),
@@ -758,6 +764,7 @@ export const {
   // Questions
   useGetQuizQuestionsQuery,
   useCreateQuestionMutation,
+  useGetQuestionByIdQuery,
   useUpdateQuestionMutation,
   useDeleteQuestionMutation,
    

@@ -432,7 +432,7 @@ const {
                 </div>
                 <div className="flex items-center text-gray-600">
                   <FiUsers className="mr-2" />
-                  <span className="font-medium">{course.enrolled_count || 0} apprenants</span>
+                  <span className="font-medium">{course.stats.enrolled_count || 0} apprenants</span>
                 </div>
                 <div className="text-gray-500 text-sm">
                   ID: <code className="bg-gray-100 px-2 py-1 rounded">{courseId}</code>
@@ -487,7 +487,7 @@ const {
                         Chargement des modules...
                       </span>
                     ) : (
-                      `${modules.length} modules • ${totalLessons} leçons • ${progress}% complété`
+                      `${modules.length} modules • ${course.stats.lesson_count} leçons • ${progress}% complété`
                     )}
                   </p>
                 </div>

@@ -30,7 +30,7 @@ import {
 import { MdOutlineQuiz, MdSubtitles } from 'react-icons/md';
 import { FaSignLanguage } from 'react-icons/fa';
 import Link from 'next/link';
-import { TrashIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { TrashIcon, PencilIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { useGetCurrentUserQuery } from '@/state/api';
 
@@ -236,7 +236,7 @@ const [deleteLesson] = useDeleteLessonMutation();
           <button
             onClick={() =>
               router.push(
-                `/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}/Quiz/${quiz?.id}`
+                `/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}/Quiz/passQuiz/`
               )
             }
             className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors flex items-center"
@@ -356,6 +356,18 @@ const [deleteLesson] = useDeleteLessonMutation();
                  title="Supprimer la leçon"
             >
               <FiTrash className="w-5 h-5" />
+            </button>
+            {/* Bouton consulter Quiz */}
+            <button
+                onClick={() =>
+                    router.push(
+                    `/formation/${courseId}/modules/${moduleId}/lessons/${lessonId}/Quiz/${quiz?.id}`
+                 )
+                }
+                 className="p-1 rounded-full hover:bg-red-100 text-red-600 transition"
+                 title="Voir le Quiz"
+            >
+              <EyeIcon className="w-5 h-5" />
             </button>
             </div>
           </div>

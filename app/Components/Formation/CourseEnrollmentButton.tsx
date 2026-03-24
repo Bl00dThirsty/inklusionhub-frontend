@@ -163,7 +163,7 @@ const handleContinueLearning = () => {
       <div className="flex flex-col gap-2">
         <button
           disabled
-          className={`${getButtonStyles()} bg-green-100 text-green-800 border border-green-300 hover:bg-green-200`}
+          className={`${getButtonStyles()} bg-green-400 text-green-800 border border-green-300 hover:bg-green-200`}
         >
           {showIcon && <FiCheck className="mr-2" />}
           Inscrit à ce cours

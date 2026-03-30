@@ -309,8 +309,10 @@ export const useChatStore = create<ChatStore>()(
 
         //suppression d'un message envoyé
     deleteMessage: (convId: string, messageId: string, forEveryone: boolean) => {
+       console.log("[STORE] deleteMessage called:", { convId, messageId, forEveryone });
   set((state) => {
     const messages = state.messagesByConv[convId] || [];
+    
 
     const updated: ChatMessageWS[] = forEveryone
       // Suppression pour tout le monde : on modifie le message

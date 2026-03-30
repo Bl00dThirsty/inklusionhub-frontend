@@ -44,6 +44,7 @@ export interface Conversation {
   id: string;
   participants: User[];
   last_message?: {
+    delivered: any;
     read: any;
     file_name: string;
     sender_id: string;
@@ -65,6 +66,13 @@ export interface ConversationFile {
   created_at: string;
   sender_id: string;
   sender_name: string;
+}
+
+export interface CommunicationStats {
+  unreadMessages: number;
+  recentConversations: number;
+  activeUsers: number;
+  groups: number;
 }
 
 export const chatApi = createApi({
@@ -184,6 +192,11 @@ export const chatApi = createApi({
             ]
           : [{ type: "Messages", id: `files-${conversationId}` }],
     }),
+
+    getCommunicationStats: builder.query<CommunicationStats, void>({
+  query: () => "/stats/",
+  providesTags: ["Conversations", "Messages"],
+}),
   }),
 });
 
@@ -196,5 +209,6 @@ export const {
   useMarkMessageReadMutation,
   useGetConversationFilesQuery,
   useSearchUsersQuery,
-  useDeleteMessageMutation
+  useDeleteMessageMutation,
+  useGetCommunicationStatsQuery
 } = chatApi;

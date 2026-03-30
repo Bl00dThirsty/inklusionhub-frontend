@@ -331,6 +331,7 @@ const connectWebSocket = useCallback(() => {
           break;
         }
 
+
         case "message_deleted": {
           const payload = data.data || data;
 

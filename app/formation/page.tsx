@@ -173,6 +173,12 @@ const CourseListPage = () => {
     router.push('/formation/create_courses');
   };
 
+  useEffect(() => {
+        if (error) {
+          toast.error('Erreur lors du chargement des cours');
+          router.push('/dashboard');
+        }
+       }, [error, router]);
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
@@ -205,12 +211,7 @@ const CourseListPage = () => {
 //     );
 //   }
 
-//   useEffect(() => {
-        if (error) {
-          toast.error('Erreur lors du chargement des cours');
-          router.push('/dashboard');
-        }
-    //   }, [error, router]);
+  
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <DashboardHeader 
@@ -289,7 +290,9 @@ const CourseListPage = () => {
 
         {/* Liste des cours */}
         <div className="space-y-4">
-          {data?.length === 0 ? (
+          {/*{data?.length === 0 ? (*/}
+          {courses.length === 0 ? (
+
             <div className="bg-white rounded-lg shadow p-8 text-center">
               <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun cours trouvé</h3>
               <p className="text-gray-600 mb-4">

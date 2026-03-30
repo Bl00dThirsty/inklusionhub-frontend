@@ -215,14 +215,16 @@ export default function ConversationList({
                   {/* Message status and unread count */}
                   <div className="flex items-center gap-1 ml-2">
                     {lastMessage?.sender_id === currentUserId && (
-                      <span className="text-gray-400">
-                        {lastMessage?.read ? (
-                          <CheckCheck size={16} className="text-blue-500" />
-                        ) : (
-                          <Check size={16} />
-                        )}
-                      </span>
-                    )}
+                    <span>
+                      {lastMessage.read ? (
+                        <CheckCheck size={16} className="text-blue-500" /> // LU
+                      ) : lastMessage.delivered ? (
+                        <CheckCheck size={16} className="text-gray-400" /> // REÇU
+                      ) : (
+                        <Check size={16} className="text-gray-400" /> //ENVOYÉ
+                      )}
+                    </span>
+                  )}
                     
                     {conv.unread_count > 0 && (
                       <span className="bg-[#25D366] text-white text-xs font-medium px-2 py-0.5 rounded-full min-w-[20px] flex items-center justify-center">

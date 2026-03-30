@@ -127,6 +127,8 @@ const setConversations = useChatStore(state => state.setConversations);
     
   } = useChatSocket({ currentUserId,activeConversationId });
 
+  const [deleteMessage] = useDeleteMessageMutation();
+
 // ─── Affichage toast quand nouvelle notification ─────
 const lastNotifIdRef = useRef<string | null>(null);
 
@@ -377,19 +379,15 @@ useEffect(() => {
     }
   };
 
- const [deleteMessage] = useDeleteMessageMutation();
-
-const handleDeleteMessage = useCallback(async (messageId: string, forEveryone: boolean) => {
-  if (forEveryone) {
-    useChatStore.getState().updateMessage(activeConversationId!, messageId, {
-      content: "Ce message a été supprimé",
-      type: "deleted" as any,
-    });
-  } else {
-    useChatStore.getState().deleteMessage(activeConversationId!, messageId, false);
-  }
-  await deleteMessage({ messageId, forEveryone });
-}, [activeConversationId, deleteMessage]);
+  // ─── Suppression de message ─────────────────────────
+const handleDeleteMessage = useCallback(async (messageId: string, forEveryone: boolean) => { 
+  if (forEveryone) { useChatStore.getState().updateMessage(activeConversationId!, messageId, 
+    { content: "Ce message a été supprimé", type: "deleted" as any, }); } 
+    else { useChatStore.getState().deleteMessage(activeConversationId!, messageId, false); } 
+    await deleteMessage({ messageId, forEveryone 
+      
+    }); }, 
+    [activeConversationId, deleteMessage]);
 
   /* ───────────────── Voice recording ───────────────── */
   const startVoiceRecording = async () => {
@@ -424,10 +422,12 @@ const handleDeleteMessage = useCallback(async (messageId: string, forEveryone: b
     }, 1000);
   };
 
+  // Arrêter l'enregistrement vocal
   const stopVoiceRecording = () => {
     mediaRecorderRef.current?.stop();
   };
 
+  // Pause / Reprendre l'enregistrement vocal
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isRecording) return;
     if (e.touches[0].clientX < 100) {
@@ -435,9 +435,10 @@ const handleDeleteMessage = useCallback(async (messageId: string, forEveryone: b
     }
   };
 
+  // Envoyer le message vocal
   const sendVoiceMessage = async () => {
     if (!voiceDraft || !activeConversationId || !otherUser) return;
-
+    // Préparer les données pour l'API
     const formData = new FormData();
     formData.append("voice", voiceDraft.blob!, "voice.webm");
     formData.append("type", "voice");
@@ -581,6 +582,7 @@ const url = `${API_URL}/conversations/${activeConversationId}/messages/?offset=$
       return;
     }
 
+    // On s'attend à une structure { results: Message[] } ou directement un array de messages
     const data = await response.json();
     console.log("[ChatLayout] Réponse fetch messages :", data);
 
@@ -628,6 +630,7 @@ const url = `${API_URL}/conversations/${activeConversationId}/messages/?offset=$
   }
 }, [activeConversationId, messageOffset, hasMore, isLoadingMore]);
 
+// Grouper les messages par date (format WhatsApp)
   const dateGroups = useMemo(() => {
     return Object.entries(groupedMessagesByDate).map(([dateKey, messages]) => ({
       date: dateKey,
@@ -637,6 +640,7 @@ const url = `${API_URL}/conversations/${activeConversationId}/messages/?offset=$
     })).sort((a, b) => a.date.localeCompare(b.date));
   }, [groupedMessagesByDate]);
 
+  // Formater la date à la manière de WhatsApp
   const formatDateLikeWhatsApp = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
@@ -655,6 +659,7 @@ const url = `${API_URL}/conversations/${activeConversationId}/messages/?offset=$
       return "Hier";
     }
     
+    // Sinon, afficher le jour de la semaine si dans la même semaine, sinon la date complète
     const diffDays = Math.floor((todayWithoutTime.getTime() - dateWithoutTime.getTime()) / (1000 * 60 * 60 * 24));
     if (diffDays < 7) {
       return date.toLocaleDateString("fr-FR", { weekday: "long" });
@@ -667,6 +672,7 @@ const url = `${API_URL}/conversations/${activeConversationId}/messages/?offset=$
     });
   };
 
+  // Afficher un aperçu du dernier message dans la liste des conversations
   const getMessageType = (msg: Message & { voice?: { audio: string }; call_type?: string }) => {
     if (msg.voice?.audio) return "voice";
     if (msg.call_type === "audio") return "call-audio";
@@ -765,6 +771,7 @@ const url = `${API_URL}/conversations/${activeConversationId}/messages/?offset=$
     </div>
   );
 
+  // Version desktop du header avec plus d'infos et d'actions
   const renderDesktopHeader = () => (
     <div className="hidden lg:flex items-center justify-between p-3 text-black">
       <div className="flex items-center gap-3">
@@ -808,6 +815,7 @@ const url = `${API_URL}/conversations/${activeConversationId}/messages/?offset=$
     </div>
   );
 
+  // Affichage du sélecteur d'emojis
   const renderEmojiPicker = () => {
     if (!showEmojiPicker) return null;
 
@@ -836,6 +844,7 @@ const url = `${API_URL}/conversations/${activeConversationId}/messages/?offset=$
     );
   };
 
+  // Affichage de l'aperçu du fichier sélectionné avant envoi
   const renderFilePreview = () => {
     if (!previewUrl || !selectedFile) return null;
 

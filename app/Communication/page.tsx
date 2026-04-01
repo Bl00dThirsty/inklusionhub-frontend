@@ -19,6 +19,7 @@ import { useGetCurrentUserQuery } from '@/state/api';
 import DashboardHeader from "@/app/Components/DashboardHeader";
 import Footer from "@/app/Components/Footer";
 import { toast } from 'sonner';
+import { useGetCommunicationStatsQuery } from "@/state/chatApi";
 
 interface UserData {
   id: string;
@@ -108,12 +109,7 @@ export default function CommunicationHub() {
   };
 
   // Statistiques simulées (à remplacer par des vraies données plus tard)
-  const stats = {
-    unreadMessages: 3,
-    recentConversations: 5,
-    activeUsers: 12,
-    avgResponseTime: 2
-  };
+  const { data: stats, isLoading: statsLoading } = useGetCommunicationStatsQuery();
 
   if (isLoading) {
     return (
@@ -154,7 +150,7 @@ export default function CommunicationHub() {
               <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl mb-4">
                 <MessageSquare className="w-6 h-6 text-blue-600" />
               </div>
-              <div className="text-3xl font-bold text-gray-900 mb-2">{stats.unreadMessages}</div>
+              <div className="text-3xl font-bold text-gray-900 mb-2">{stats?.unreadMessages ?? 0}</div>
               <p className="text-gray-600 text-sm">Messages non lus</p>
             </div>
             
@@ -162,7 +158,7 @@ export default function CommunicationHub() {
               <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-xl mb-4">
                 <Users className="w-6 h-6 text-green-600" />
               </div>
-              <div className="text-3xl font-bold text-gray-900 mb-2">{stats.recentConversations}</div>
+              <div className="text-3xl font-bold text-gray-900 mb-2">{stats?.recentConversations ?? 0}</div>
               <p className="text-gray-600 text-sm">Conversations récentes</p>
             </div>
             
@@ -170,7 +166,7 @@ export default function CommunicationHub() {
               <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-100 rounded-xl mb-4">
                 <Globe className="w-6 h-6 text-purple-600" />
               </div>
-              <div className="text-3xl font-bold text-gray-900 mb-2">{stats.activeUsers}</div>
+              <div className="text-3xl font-bold text-gray-900 mb-2">{stats?.activeUsers ?? 0}</div>
               <p className="text-gray-600 text-sm">Contacts</p>
             </div>
             
@@ -178,7 +174,7 @@ export default function CommunicationHub() {
               <div className="inline-flex items-center justify-center w-12 h-12 bg-yellow-100 rounded-xl mb-4">
                 <Users className="w-6 h-6 text-yellow-600" />
               </div>
-              <div className="text-3xl font-bold text-gray-900 mb-2">{stats.avgResponseTime}</div>
+              <div className="text-3xl font-bold text-gray-900 mb-2">{stats?.groups ?? 0}</div>
               <p className="text-gray-600 text-sm">Groupes</p>
             </div>
           </div>

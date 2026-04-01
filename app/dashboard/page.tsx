@@ -346,7 +346,7 @@ export default function DashboardPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                  Bonjour, {userData.name} {userData.forename}
+                  Bonjour, {userData.name} {userData.forename} 🎉
                 </h1>
                 <p className="text-blue-100 text-lg mb-4">
                   Bienvenue sur votre tableau de bord personnalisé
